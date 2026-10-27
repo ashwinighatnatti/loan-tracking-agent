@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "loan-agent"
+version = "0.0.1"
+description = "Loan tracking agent: processes insurance renewal documents against a loan system."
+# tools/tools.py uses date.strptime, which exists only on Python 3.14+ (review finding F-15).
+requires-python = ">=3.14"
+dependencies = [
+    "nameparser>=1.1",
+    "rapidfuzz>=3.9",
+    "python-dateutil>=2.9",
+    "playwright>=1.49",
+    "flask>=3.0",
+]
+
+[project.optional-dependencies]
+# Not installed in CI: the ADK agent does not import cleanly yet (F-11, F-13).
+agent = ["google-adk", "pdfplumber", "python-dotenv", "pydantic>=2"]
+test = ["pytest>=8", "pyyaml>=6"]
+
+[tool.setuptools.packages.find]
+include = ["loan_agent*", "review*"]

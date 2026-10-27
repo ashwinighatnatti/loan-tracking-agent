@@ -29,3 +29,7 @@ Open a new Terminal window
 ## Launch browser
 
 goto localhost:9090/document-search.html
+
+## Sample PDFs
+
+The sample PDFs referenced by the mock API (`mocks/pdf/` and the `case.pdf` files under `mocks/api/data/`) are not included in this repository. The API serves them if present; the tests do not need them.

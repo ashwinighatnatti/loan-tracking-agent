@@ -1,6 +1,21 @@
 # Python bytecode
 __pycache__/
 *.py[cod]
+*.egg-info/
 
 # Test cache
 .pytest_cache/
+
+# Environments and secrets
+.venv/
+venv/
+.env
+.adk/
+
+# Agent run output (contains borrower data, see F-20, F-25)
+loan_agent/data/agent_output/
+agent_output/
+output/
+
+# Review eval run results (baselines in eval/baselines are tracked)
+eval/results/

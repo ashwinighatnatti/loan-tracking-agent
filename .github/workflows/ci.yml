@@ -1,0 +1,23 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -e ".[test]"
+      - run: playwright install --with-deps chromium
+      - name: Unit and scraper tests
+        run: pytest -q
+      - name: Review-eval self check (anchors resolve, oracle scores 1.0, null reviewer scores 0)
+        run: |
+          python eval/run_review.py --validate-cases
+          python eval/run_review.py --reviewer oracle --check eval/baselines/oracle.json
+          python eval/run_review.py --reviewer null --check eval/baselines/null.json

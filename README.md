@@ -26,6 +26,15 @@ loan-agent/
 README.md                   (this file)
 
 
+# Review and CI
+
+- `REVIEW.md` defines what a good change is: blast-radius paths that need a human, invariants, the bug-type catalog, and what counts as a nitpick.
+- `review/` is the code review agent: `python -m review diff --base main` (`review/README.md`).
+- `eval/` replays code reviewers against known defects (`eval/README.md`).
+- `.github/workflows/ci.yml` runs `pytest` and the review-eval self-check. Python 3.14+ is required (`pyproject.toml`).
+- `tests/conftest.py` lists known failing tests as strict `xfail` with the finding that explains each.
+
+
 # TODO
 
 1. Design a structure to perform actions on screen

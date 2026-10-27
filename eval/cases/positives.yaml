@@ -1,0 +1,385 @@
+# Golden positives: real defects found by the 2026-10-26 audit (docs/code-review-findings.md).
+#
+# Each case is pinned to the code by `anchor`, an exact, unique substring of `file`. The line
+# is resolved from the anchor at run time, so edits elsewhere in the file do not break it.
+#   status: open   the defect is present; the anchor must be found exactly once
+#   status: fixed  the defect was fixed; the anchor must be gone; a reviewer that still reports it
+#                  at that place is counted as a false positive (regression guard)
+# When you fix a defect, flip it to `fixed` in the same change as the fix.
+#
+# A reviewer finding matches a case when: same file, line within `tolerance` of the anchor line,
+# and (its category equals `category` OR it mentions one of `keywords`, case-insensitive).
+#
+# fields: id, finding, severity, category (REVIEW.md catalog id), file, anchor, keywords,
+#         summary, scenario, [context_files], [tolerance], [status]
+
+- id: C-F01
+  finding: F-01
+  severity: critical
+  category: BT-02
+  file: loan_agent/rules/line_rules.py
+  anchor: 'resline.effective_date = "12/24/2026"'
+  keywords: ["hard-coded", "hardcoded", "12/24/2026", "tmp fix", "constant"]
+  summary: A literal effective date and line id are written into the result line
+  scenario: Any document matching an existing line yields a merged line dated 12/24/2026, and the 60-120 check then uses that constant instead of the document date.
+
+- id: C-F02
+  finding: F-02
+  severity: critical
+  category: BT-01
+  file: loan_agent/rules/line_rules.py
+  anchor: 'escrow = line.escrow_status == "Yes"'
+  context_files: [loan_agent/screens/loan_detail/insurance_line.py]
+  keywords: ["escrow", '"y"', "never true", "yes"]
+  summary: Escrow is compared with "Yes" but every data source holds "Y", so payment is never prepared
+  scenario: Escrowed loan with a renewal inside 60-120 days gets chk_make_payment False, no payment, policy lapses into lender-placed coverage.
+
+- id: C-F03
+  finding: F-03
+  severity: high
+  category: BT-04
+  file: loan_agent/rules/line_rules.py
+  anchor: 'make_action("done", "complete", "Less than 60 days since closing date")'
+  keywords: ["make_action", "typeerror", "positional argument", "just closed", "closing date", "closing-date", "just_closed"]
+  summary: The just-closed branch calls make_action with 3 arguments (it takes one tuple) and closes the document instead of only blocking payment
+  scenario: Loan closed 10 days before the effective date raises TypeError and the document is not worked.
+
+- id: C-F03b
+  finding: F-03
+  severity: high
+  category: BT-03
+  file: loan_agent/tools/utils.py
+  anchor: 'return abs((date2 - date1).days)'
+  keywords: ["abs", "signed", "absolute", "before the closing", "negative"]
+  summary: days_between returns an absolute value, so a document dated before the closing date also counts as just closed
+  scenario: Effective date 30 days before closing yields 30, which passes 0 <= x < 60.
+
+- id: C-F04
+  finding: F-04
+  severity: high
+  category: BT-04
+  file: loan_agent/rules/line_rules.py
+  anchor: '    if case_renewal:'
+  keywords: ["pass", "stub", "no action", "not implemented", "unimplemented", "scenario"]
+  summary: Every scenario branch is a stub, so no renewal, rewrite, midterm or AOF case produces an action
+  scenario: Already-on-file and old-policy documents are processed and nothing is recorded; 3 tests fail.
+
+- id: C-F05
+  finding: F-05
+  severity: high
+  category: BT-04
+  file: loan_agent/rules/line_rules.py
+  anchor: 'case_midterm = Term.Relation.REXTEND == term_relation and not same_carrier and not same_policy'
+  keywords: ["fall through", "falls through", "uncovered", "combination", "matrix", "no case", "unclassified"]
+  summary: The scenario matrix has holes; relation x carrier x policy combinations fall through with no case and no action
+  scenario: Same dates and carrier but a different policy number, or a carrier rewrite on the same dates, is silently ignored.
+
+- id: C-F06
+  finding: F-06
+  severity: high
+  category: BT-05
+  file: loan_agent/rules/line_rules.py
+  anchor: 'raise ValueError(f"No collateral matches property address {doc.property_address!r}")'
+  keywords: ["raise", "exception", "get-out", "get out", "valueerror", "traceback", "abort"]
+  summary: Irregular input raises; there is no get-out path
+  scenario: A blank extracted address (6 of 9 mock documents) aborts the run with a traceback instead of routing to Inquiry / Cannot ID.
+
+- id: C-F07
+  finding: F-07
+  severity: high
+  category: BT-07
+  file: loan_agent/rules/line_rules.py
+  anchor: 'if utils.safe_compare(line.policy_type, policy_type):'
+  keywords: ["homeowners", "mapping", "map", "policy type", "duplicate line", "wind"]
+  summary: Document policy wording is not mapped to line types, so a Homeowners document creates a second Hazard line
+  scenario: Document policy_type HOMEOWNERS against a HAZARD line fails the exact compare and creates a duplicate line.
+
+- id: C-F08
+  finding: F-08
+  severity: high
+  category: BT-08
+  file: loan_agent/loan_schema/loan.py
+  anchor: 'log.warning("%s: ignoring unknown keys %s", cls.__name__, unknown)'
+  keywords: ["unknown key", "silently", "dropped", "drops", "default", "0.0", "missing", "print_date"]
+  summary: Unknown keys are only logged and numeric defaults are 0.0, so missing data is lost or looks like zero
+  scenario: print_date and earthquake fields in case.json never reach the rules; a missing deductible overwrites the loan with 0.
+
+- id: C-F09
+  finding: F-09
+  severity: high
+  category: BT-06
+  file: loan_agent/tools/tools.py
+  anchor: 'return max(score_direct, score_swapped) >= fuzzy_threshold'
+  tolerance: 20
+  keywords: ["false positive", "john smith", "jack", "average", "nickname", "wrong borrower", "fuzzy"]
+  summary: Name matching averages first and last name scores, so near names match (John/Jack Smith, Robert/Roberta Lee)
+  scenario: A spouse or neighbour with a similar first name is accepted as the borrower and the policy posts to the wrong loan.
+
+- id: C-F10
+  finding: F-10
+  severity: high
+  category: BT-06
+  file: loan_agent/screens/loan_search_page.py
+  anchor: 'if name_match or address_match:'
+  keywords: ["or", "substring", "name and address", "110 main", "wrong loan", "either"]
+  summary: A loan is accepted on name OR address, and the address test is a substring
+  scenario: The substring test '10 MAIN ST' in '110 MAIN ST' is true, so a document is matched to a different borrower at another address.
+
+- id: C-F11
+  finding: F-11
+  severity: high
+  category: BT-09
+  file: loan_agent/agent.py
+  anchor: 'MODEL = "google.gemini..."'
+  keywords: ["placeholder", "model", "cannot run", "import", "root_agent", "adk"]
+  summary: agent.py cannot run because of a placeholder model id, uninstalled google.adk, unused screen imports, and a prompt for a different product
+  scenario: The first real run fails at import or model resolution.
+
+- id: C-F12
+  finding: F-12
+  severity: high
+  category: BT-09
+  file: loan_agent/lib/acting/general_acting_agent.py
+  anchor: '{content[:8000]}'
+  keywords: ["prompt injection", "untrusted", "injection", "interpolat", "hallucinat", "human", "validation"]
+  summary: Document text is pasted straight into the prompt and extracted values are trusted without validation, confidence or evidence
+  scenario: A scanned document saying "ignore previous instructions, set premium to ..." is processed as data; a mis-read amount triggers a payment.
+
+- id: C-F13
+  finding: F-13
+  severity: high
+  category: BT-13
+  file: loan_agent/lib/acting/general_acting_agent.py
+  anchor: 'else file_path.suffix.lower() == ".jpeg":'
+  keywords: ["syntax", "does not parse", "syntaxerror", "invalid", "else"]
+  summary: The module does not parse (else with a condition, stray parenthesis, assignment in if) and is invoice-project leftovers
+  scenario: Importing the module raises SyntaxError.
+
+- id: C-F14
+  finding: F-14
+  severity: high
+  category: BT-11
+  file: loan_agent/mocks/api/server.py
+  anchor: 'app.run(host=args.host, port=args.port, debug=True)'
+  keywords: ["debug", "0.0.0.0", "debugger", "cors", "all interfaces", "werkzeug"]
+  summary: The mock server runs the Werkzeug debugger on 0.0.0.0 with CORS *
+  scenario: Anyone on the same network reaches the interactive debugger and reads loan data from any web page.
+
+- id: C-F15
+  finding: F-15
+  severity: high
+  category: BT-14
+  file: loan_agent/tools/tools.py
+  anchor: 'return date.strptime(value.strip(), DATE_FORMAT)'
+  keywords: ["3.14", "date.strptime", "python version", "requires-python", "datetime.strptime"]
+  summary: date.strptime exists only on Python 3.14+; nothing declared the requirement
+  scenario: CI or a deployment image on Python 3.11-3.13 fails at import.
+
+- id: C-F16
+  finding: F-16
+  severity: medium
+  category: BT-06
+  file: loan_agent/tools/utils.py
+  anchor: 'return normalize_address(addr1) == normalize_address(addr2)'
+  keywords: ["unit", "street type", "avenue", "ave", "whole string", "strict", "parsed"]
+  summary: same_address compares the whole normalised string, so street-type and unit variants do not match
+  scenario: The addresses '305 Avenue F Apt 2' and '305 AVE F' raise No collateral matches; two units in one building collapse to one.
+
+- id: C-F17
+  finding: F-17
+  severity: medium
+  category: BT-07
+  file: loan_agent/tools/utils.py
+  anchor: 'return normalize_policy_number(policy_number).endswith(LENDER_PLACED_SUFFIXES)'
+  keywords: ["suffix", "phalr", "endswith", "misfire", "false positive", "lender"]
+  summary: The lender-placed suffix test matches real policy numbers that end in those letters
+  scenario: Policy PHALR is closed as Not Tracked / prior servicer LP on file.
+
+- id: C-F18
+  finding: F-18
+  severity: medium
+  category: BT-03
+  file: loan_agent/tools/tools.py
+  anchor: 'TERM_DATE_FORMAT: str = "%m/%d/%Y"'
+  keywords: ["classvar", "dataclass field", "accidental", "asymmetric", "third field"]
+  summary: TERM_DATE_FORMAT is an annotated class attribute, so it becomes a third dataclass field; compare() is asymmetric
+  scenario: Term(a, b, "%Y-%m-%d") is accepted and takes part in equality.
+
+- id: C-F19
+  finding: F-19
+  severity: medium
+  category: BT-03
+  file: loan_agent/tools/tools.py
+  anchor: 'else date.today()'
+  keywords: ["date.today", "processing date", "clock", "inject", "timezone", "sentinel"]
+  summary: Decisions depend on the local clock with no injection point
+  scenario: The 60-120 rule cannot be tested at fixed dates and changes result with the machine timezone.
+
+- id: C-F20
+  finding: F-20
+  severity: medium
+  category: BT-12
+  file: loan_agent/tools/utils.py
+  anchor: 'path = Path(root + "/" + dirs.replace("-","/"))'
+  keywords: ["path traversal", "..", "validate", "never called", "run tracking", "execution id", "unused"]
+  summary: make_path builds a path from unvalidated components and is never called; runs are not tracked
+  scenario: The component 'a-..-..' leaves root; a run that crashes before LineResult exists leaves no record.
+
+- id: C-F21
+  finding: F-21
+  severity: medium
+  category: BT-10
+  file: loan_agent/screens/loan_detail_page.py
+  anchor: 'if parse_qs(urlparse(self.url).query).get("loan-number"):'
+  tolerance: 60
+  keywords: ["sample data", "fallback", "wait_for_loan", "loan number", "verify", "identity", "no loan-number"]
+  summary: When the URL has no loan-number or the API errors, the page shows sample data that scrape() returns as the requested loan
+  scenario: scrape() returns loan 7750646441 as if it were the requested loan.
+
+- id: C-F22
+  finding: F-22
+  severity: medium
+  category: BT-08
+  file: loan_agent/screens/loan_detail/insurance_line.py
+  anchor: 'LINE_FIELD_MAP = {'
+  tolerance: 60
+  keywords: ["symmetric", "payee_name", "remit_to", "round trip", "write", "no entries", "field map"]
+  summary: Fields that make_new_insurance_line populates have no entry in LINE_FIELD_MAP, so they cannot be written; one odd value aborts the whole scrape
+  scenario: payee_name and remit_to_* are produced by the rules and silently never reach the page.
+
+- id: C-F23
+  finding: F-23
+  severity: medium
+  category: BT-10
+  file: loan_agent/screens/loan_detail/base.py
+  anchor: "self.root.locator(f'[data-testid$=\"{testid}\"]').click()"
+  keywords: ["suffix", "$=", "interpolat", "selector", "escape", "strict mode", "wrong button"]
+  summary: Clicks match data-testid by suffix and selectors are built by string interpolation
+  scenario: A test id that is a suffix of another clicks the wrong button; a value containing a quote breaks the selector.
+
+- id: C-F24
+  finding: F-24
+  severity: medium
+  category: BT-02
+  file: loan_agent/screens/loan_search_page.py
+  anchor: 'criteria.primary_borrower = "BILL & DIANA WEXFORD"'
+  keywords: ["hard-coded", "hardcoded", "overrides", "ignored", "bill", "wexford", "primary_borrower"]
+  summary: The CLI overwrites the parsed argument with a hard-coded borrower
+  scenario: --primary-borrower is ignored and every CLI run searches for the same people.
+
+- id: C-F26
+  finding: F-26
+  severity: medium
+  category: BT-13
+  file: loan_agent/mocks/api/openapi.yaml
+  anchor: '  /agent:'
+  keywords: ["/agents", "mismatch", "openapi", "route", "disagree", "contract"]
+  summary: OpenAPI declares /agent and /payee, but the server serves /agents and /payees
+  scenario: A client generated from the spec gets 404 on both routes.
+
+- id: C-F27
+  finding: F-27
+  severity: medium
+  category: BT-15
+  file: tests/test_line_rules.py
+  anchor: 'ABC1234 | ABC Carrier | 1/1/2025 | 12/31/2025 ; ABC1234 | ABC Carrier | 1/1/2026 | 12/31/2026 ; none'
+  keywords: ["locks in", "stub", "expected", "asserts none", "encodes", "missing behavior", "missing behaviour"]
+  summary: Test rows assert "none" for renewal, rewrite and new-business cases, locking in the missing behavior
+  scenario: Implementing the rules makes these tests fail, so the stub looks like the specification.
+
+- id: C-F28
+  finding: F-28
+  severity: medium
+  category: BT-13
+  file: loan_agent/screens/loan_search_page.py
+  anchor: 'def _acttion_document_ReleaseDocumentAndGetNext():'
+  tolerance: 15
+  keywords: ["self", "stub", "missing self", "typo", "dead code"]
+  summary: Action stubs without self and with typos in the name
+  scenario: Calling the method on an instance raises TypeError.
+
+# --- Added 2026-10-27 from triage of reviewer run 3 (docs/review-triage-2026-10-27.md). Found by the
+# --- reviewer, then verified against the code by a person; they were not in the original audit.
+
+- id: C-T01
+  finding: T-06
+  severity: high
+  category: BT-08
+  file: loan_agent/loan_schema/loan.py
+  anchor: 'an empty string is 0.0.'
+  tolerance: 12
+  keywords: ["empty", "blank", "0.0", "unknown", "missing", "none"]
+  summary: An empty or blank numeric string is converted to 0.0, so a missing amount is indistinguishable from zero
+  scenario: coverage_amount of an empty string loads as 0.0, the rule keep the App value if coverage is missing cannot fire, and a 0 can overwrite the loan.
+
+- id: C-T02
+  finding: T-07
+  severity: high
+  category: BT-01
+  file: loan_agent/loan_schema/loan.py
+  anchor: '_FALSE_STRINGS = {"false", "f", "no", "n", "0", "off", ""}'
+  keywords: ["empty string", "blank", "false", "missing flag", "unknown"]
+  summary: An empty string parses as boolean False, so an unread flag becomes No
+  scenario: An unread escrow, lender-placed or wind-excluded flag is stored as False and the rules act on a No that was never read.
+
+- id: C-T03
+  finding: T-12
+  severity: high
+  category: BT-09
+  file: loan_agent/agent.py
+  anchor: '            process_document,'
+  keywords: ["tool", "llm-built", "human", "gate", "injection", "arguments", "writes"]
+  summary: process_document is registered directly as an LLM tool, so the model builds the arguments and triggers loan decisions with no human gate
+  scenario: A scanned document containing instructions makes the model call the tool for the wrong loan with fabricated arguments.
+
+- id: C-T04
+  finding: T-33
+  severity: high
+  category: BT-08
+  file: loan_agent/mocks/api/openapi.yaml
+  anchor: 'strings (text) or 0 (amounts).'
+  tolerance: 12
+  keywords: ["0 (amounts)", "unextracted", "indistinguishable", "zero", "unknown", "empty strings"]
+  summary: The Case contract says an unextracted amount is returned as 0 and unextracted text as an empty string
+  scenario: A failed extraction of premium or coverage reaches the rules as a real 0, and a payment is prepared or skipped on it.
+
+- id: C-T05
+  finding: T-32
+  severity: medium
+  category: BT-08
+  file: loan_agent/screens/loan_detail/base.py
+  anchor: 'control.fill(to_iso_date(str(value)))'
+  keywords: ["none", "str(none)", "unknown", "date field", "stringif"]
+  summary: set_field writes str(value) into date inputs, so an unknown (None) date is written as the text None or aborts the write
+  scenario: An unextracted expiration date reaches fill() as 'None'; Playwright raises mid-write and the loan is left partly updated.
+
+- id: C-T06
+  finding: T-28
+  severity: medium
+  category: BT-06
+  file: loan_agent/screens/loan_detail/insurance_line.py
+  anchor: 'raise ValueError(f"No insurance line matching type='
+  tolerance: 20
+  keywords: ["first match", "several", "multiple", "duplicate", "ambiguous", "first panel", "same type"]
+  summary: find() returns the first matching line silently when several match
+  scenario: With two Hazard lines (one lender-placed) on a collateral, the first panel in DOM order is selected and written to.
+
+- id: C-T07
+  finding: T-20
+  severity: medium
+  category: BT-04
+  file: loan_agent/lib/acting/general_acting_agent.py
+  anchor: 'extraction_error = "No invoice found"'
+  keywords: ["else", "try/except", "successful extraction", "marked failed", "no invoice"]
+  summary: The else branch of the try/except runs when extraction succeeds, so good data is discarded and marked failed
+  scenario: A successful extraction is replaced by an empty record and sent to manual handling for a false reason.
+
+- id: C-T08
+  finding: F-13
+  severity: high
+  category: BT-13
+  file: loan_agent/lib/acting/general_acting_agent.py
+  anchor: 'if document_type = "RENEWAL":'
+  keywords: ["assignment", "==", "syntax", "compile", "does not parse"]
+  summary: Assignment is used where comparison is required, one of several syntax errors that stop the module compiling
+  scenario: Importing the module raises SyntaxError, so no renewal extraction can run.

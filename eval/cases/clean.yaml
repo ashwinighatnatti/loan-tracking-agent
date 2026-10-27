@@ -1,0 +1,27 @@
+# Negative tasks. Any non-nitpick finding here is a false positive; nitpicks are counted separately.
+#   clean         correct code, including fixed versions of known defects (regression guards)
+#   nitpick_bait  correct code with style quirks that REVIEW.md section 4 says not to report
+- id: T-CLEAN-ESCROW
+  kind: clean
+  files: [eval/fixtures/clean/escrow_fixed.py]
+  description: Fixed F-02. Unknown escrow goes to a human.
+- id: T-CLEAN-CLOSING
+  kind: clean
+  files: [eval/fixtures/clean/closing_rule_fixed.py]
+  description: Fixed F-03. Signed difference, unknown dates return None.
+- id: T-CLEAN-LINK
+  kind: clean
+  files: [eval/fixtures/clean/loan_link_fixed.py]
+  description: Fixed F-10. Name AND address, ambiguity returned to the caller.
+- id: T-CLEAN-INTAKE
+  kind: clean
+  files: [eval/fixtures/clean/intake_getout.py]
+  description: Fixed F-06. Missing fields produce an Edit outcome, not an exception.
+- id: T-BAIT-STYLE
+  kind: nitpick_bait
+  files: [eval/fixtures/bait/style_only.py]
+  description: Short names, if/else returning booleans, a character loop. Behavior is correct.
+- id: T-BAIT-UPSTREAM
+  kind: nitpick_bait
+  files: [eval/fixtures/bait/validated_upstream.py]
+  description: Looks like it lacks validation, but intake_policy already guards it.

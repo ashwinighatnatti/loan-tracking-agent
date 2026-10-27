@@ -1,0 +1,11 @@
+# Reviewer families for model inversion (review/inversion.py).
+# Order matters: the first entry is the default reviewer when the author is unknown.
+# When the author's family is detected, the first configured family that differs is used.
+#
+# A family is a backend spec: claude-cli | anthropic | command:<shell command>.
+# To enable inversion for Claude-written code, uncomment the gpt line and set OPENAI_API_KEY and
+# OPENAI_REVIEW_MODEL (the adapter does not guess a model name). Then measure it:
+#   python eval/run_review.py --reviewer "python -m review --protocol --author gpt" --runs 3
+[families]
+claude = "claude-cli"
+# gpt = "command:python -m review.adapters.openai_chat"

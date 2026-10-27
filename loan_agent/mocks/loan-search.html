@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Workspace – Policy Document Review</title>
+<meta name="description" content="Insurance policy document workspace. Suggested Items Search finds the loans matching the search fields. Scrape-friendly: every field carries id and data-field attributes; matching loans are exposed as cards (data-col) and as JSON in #search-results-json.">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #ffffff;
+    --panel: #f2f2f2;
+    --panel-2: #e9e9e9;
+    --text: #1a1a1a;
+    --muted: #4a4a4a;
+    --label-bg: #e6e6e6;
+    --rule: #d6d6d6;
+    --band: #e8f0f8;
+    --band-text: #1f4e79;
+    --link: #0b3d91;
+    --nav: #111111;
+    --nav-text: #ffffff;
+    --accent: #2f6db5;
+    --green: #6ab04c;
+    --green-2: #4e9a35;
+    --alert: #d40000;
+    --input-bg: #ffffff;
+    --input-border: #9a9a9a;
+    --row-hover: #f7fbff;
+    --row-selected: #e1eefb;
+    --header-a: #0a2a5e;
+    --header-b: #1e6a3b;
+    --menu-bg: #3d7cc0;
+    --menu-bg-hover: #2b62a0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17191c; --panel: #21252a; --panel-2: #2a2f35; --text: #e8e8e8; --muted: #b4b4b4;
+      --label-bg: #2c3138; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --link: #8fb8ff;
+      --nav: #0b0d10; --accent: #6ea3e6; --input-bg: #14171a; --input-border: #555c66;
+      --row-hover: #232b35; --row-selected: #2a3b52; --alert: #ff6b6b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17191c; --panel: #21252a; --panel-2: #2a2f35; --text: #e8e8e8; --muted: #b4b4b4;
+    --label-bg: #2c3138; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --link: #8fb8ff;
+    --nav: #0b0d10; --accent: #6ea3e6; --input-bg: #14171a; --input-border: #555c66;
+    --row-hover: #232b35; --row-selected: #2a3b52; --alert: #ff6b6b;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.35 Verdana, Geneva, "DejaVu Sans", Arial, sans-serif;
+    min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+  }
+  /* Side gutter that scales with the viewport */
+  :root { --gutter: clamp(12px, 2vw, 28px); }
+  a { color: var(--link); }
+  button { font: inherit; cursor: pointer; }
+  input, select { font: inherit; color: var(--text); background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 2px; padding: 3px 5px; }
+  input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible, tr[tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Header */
+  .brand-bar {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px;
+    padding: 10px var(--gutter); color: #fff;
+    background: linear-gradient(100deg, var(--header-a) 0 38%, var(--header-b) 62%, #2d8a4d 100%);
+  }
+  .brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+  .brand-name { font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; letter-spacing: 0.06em; }
+  .brand-sub { font-size: 11px; letter-spacing: 0.22em; }
+  .welcome { display: flex; align-items: center; gap: 12px; font-size: 12px; line-height: 1.3; }
+  .client-badge { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.7); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  nav.topnav { background: var(--nav); color: var(--nav-text); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 14px; padding: 5px var(--gutter); font-size: 12px; }
+  nav.topnav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  nav.topnav a { color: var(--nav-text); text-decoration: none; }
+  nav.topnav a:hover { text-decoration: underline; }
+  nav.topnav .right li + li::before { content: "|"; margin-right: 14px; opacity: .6; }
+
+  /* Page */
+  .page { flex: 1 1 auto; width: 100%; padding: 10px var(--gutter) 0; display: flex; flex-direction: column; min-height: 0; }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 4px 20px; }
+  h1 { margin: 0 0 10px; font-size: 22px; font-weight: 400; color: var(--band-text); }
+  .flag { color: var(--alert); font-weight: 700; font-size: clamp(15px, 1.8vw, 20px); text-decoration: underline; text-align: right; line-height: 1.1; }
+  /* Two columns share the width (left ~60%, right ~40%); stack below 900px. */
+  .cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 16px; align-items: start; }
+  .cols > * { min-width: 0; }
+  @media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+  section.card { margin-bottom: 14px; }
+  .card > header, .band {
+    background: var(--band); color: var(--band-text); padding: 5px 8px; font-size: 14px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .card > header .caret::before, .band .caret::before { content: "▾"; margin-right: 6px; font-size: 12px; }
+
+  /* Field lists */
+  dl.fields { margin: 0; padding: 6px 8px 6px 4px; display: grid; grid-template-columns: max-content 1fr; column-gap: 8px; row-gap: 0; }
+  dl.fields dt { background: var(--label-bg); color: var(--muted); text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--bg); min-width: clamp(100px, 12vw, 150px); max-width: 200px; }
+  dl.fields dd { margin: 0; padding: 4px 6px; border-bottom: 1px solid var(--rule); min-height: 24px; word-break: break-word; }
+  dl.fields.compact dt { min-width: clamp(70px, 8vw, 90px); max-width: 140px; }
+  h3.sub { margin: 10px 8px 4px; font-size: 13px; }
+  .indent { padding-left: 10px; }
+
+  /* Document panel */
+  .doc-panel { background: var(--panel); padding: 8px 8px 10px; }
+  .doc-title { font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .doc-title a { font-weight: 700; }
+  .pdf-chip { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
+  .pdf-chip .ico { display: inline-block; width: 12px; height: 15px; background: #d0342c; border-radius: 1px; position: relative; }
+  .doc-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0 16px; }
+  .doc-meta dl.fields { padding: 0; }
+  .doc-meta .doc-actions { display: block; text-align: right; }
+
+  /* Search form */
+  form.search { background: var(--panel-2); padding: 10px 8px 12px; margin-top: 10px; }
+  form.search h2 { margin: 0 0 8px; font-size: 13px; }
+  .grid-form { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 10px; align-items: center; max-width: 640px; }
+  .grid-form label { text-align: right; background: var(--label-bg); color: var(--muted); padding: 3px 6px; }
+  .grid-form .wide { grid-column: 1 / -1; }
+  .grid-form input.short { width: min(100%, 12ch); }
+  .grid-form input.mid { width: min(100%, 16ch); }
+  .grid-form input.long { width: 100%; }
+  .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .inline input.city { flex: 1 1 160px; min-width: 0; }
+  .inline input.zip { width: min(100%, 11ch); }
+  .placeholder-hint::placeholder { color: #a85fb8; opacity: 1; }
+  .btn-row { margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn { background: linear-gradient(var(--green), var(--green-2)); color: #fff; border: 1px solid var(--green-2); border-radius: 14px; padding: 4px 12px; font-weight: 700; text-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  .btn:disabled { opacity: .55; cursor: progress; }
+  .btn.quiet { background: var(--panel); color: var(--text); border-color: var(--input-border); text-shadow: none; font-weight: 400; }
+  .status { font-size: 12px; color: var(--muted); }
+  .status[data-state="error"] { color: var(--alert); }
+
+  /* Results */
+  .results { margin-top: 10px; }
+  .results .band { font-size: 13px; }
+  ol.results-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--rule); border-top: 0; }
+  .result-item { padding: 6px 8px 8px; border-bottom: 1px solid var(--rule); cursor: pointer; font-size: 12px; }
+  .result-item:last-child { border-bottom: 0; }
+  .result-item:hover { background: var(--row-hover); }
+  .result-item[aria-selected="true"] { background: var(--row-selected); box-shadow: inset 3px 0 0 var(--accent); }
+  .result-item .row-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .result-item .property { color: var(--muted); margin: -2px 0 4px; }
+  .result-item dl.fields { padding: 0; }
+  .result-item dl.fields dt { min-width: 80px; }
+  .result-item dd.num { text-align: right; }
+  .empty { padding: 10px 8px; color: var(--muted); border: 1px solid var(--rule); border-top: 0; }
+  .select-btn { background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: 400; }
+
+  /* Right column */
+  .right .card > header { font-size: 14px; }
+  .right .loan-head { padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; }
+  .two-up { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 0 8px; }
+  .two-up dl.fields { padding: 0; }
+
+  /* Actions menus (Document panel, To-Do List) */
+  .actions-menu { position: relative; }
+  .actions-btn { background: none; border: 0; padding: 2px 4px; color: var(--band-text); font-weight: 700; font-size: 15px; }
+  .actions-btn::before { content: "\270E  "; color: var(--accent); }
+  .menu-list { position: absolute; right: 0; top: calc(100% + 2px); z-index: 20; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 110px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  .menu-list[hidden] { display: none; }
+  .menu-list button { display: block; width: 100%; text-align: left; white-space: nowrap; background: var(--menu-bg); color: #fff; border: 0; padding: 6px 10px; font-weight: 700; font-size: 14px; }
+  .menu-list button:hover, .menu-list button:focus-visible { background: var(--menu-bg-hover); outline-offset: -2px; }
+
+  /* To-Do edit dialog (form lives in an iframe) */
+  dialog.modal { padding: 0; border: 1px solid var(--rule); background: var(--bg); color: var(--text); width: min(600px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
+  dialog.modal::backdrop { background: rgba(0,0,0,.45); }
+  dialog.modal iframe { display: block; width: 100%; height: 190px; border: 0; }
+  .modal-actions { margin: 0; padding: 8px 12px; justify-content: flex-end; background: var(--panel); border-top: 1px solid var(--rule); }
+
+  /* Footer */
+  footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 11px; margin-top: 12px; padding: 8px 0; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--rule); color: var(--muted); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: no-preference) {
+    .result-item { transition: background .12s; }
+  }
+</style>
+</head>
+<body data-app="policy-workspace" data-version="1.0.0">
+
+<header class="brand-bar" id="site-header">
+  <div class="brand">
+    <span class="brand-name">EXAMPLECO</span>
+    <span class="brand-sub">FINANCIAL, INC.</span>
+  </div>
+  <div class="welcome" id="welcome">
+    <span class="client-badge" aria-hidden="true">SM</span>
+    <div>
+      <div>Welcome</div>
+      <div id="client-name" data-field="client_name">ClientCo Mortgage Servicing</div>
+      <div>Client # <span id="client-number" data-field="client_number">41207</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="topnav" id="top-nav" aria-label="Primary">
+  <ul class="left">
+    <li><a href="#loan-search" data-nav="loan-search">Loan Search</a></li>
+    <li><a href="#policy-depot" data-nav="policy-depot">Policy Depot</a></li>
+    <li><a href="#document-search" data-nav="document-search">Document Search</a></li>
+    <li><a href="#workspace" data-nav="workspace" aria-current="page">Workspace</a></li>
+  </ul>
+  <ul class="right">
+    <li><a href="#logout" data-nav="logout">Logout</a></li>
+    <li><a href="#help" data-nav="help">Help</a></li>
+    <li><a href="#home" data-nav="home">Home</a></li>
+    <li><a href="#site" data-nav="site">examplelp.com</a></li>
+  </ul>
+</nav>
+
+<main class="page" id="workspace">
+  <div class="page-head">
+    <h1>My Workspace</h1>
+    <div class="flag" id="queue-name" data-field="queue">Unfinished<br>Documents</div>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT COLUMN -->
+    <div class="left">
+      <section class="card doc-panel" id="document-section" data-section="document">
+        <div class="doc-title">
+          <span>Document</span>
+          <a href="http://localhost:9191/ocr/DEFAULT_DOC" id="document-number" data-field="document_number">DEFAULT_DOC</a>
+          <a href="http://localhost:9191/pdf/DEFAULT_DOC" class="pdf-chip" id="document-pdf-link" data-field="document_pdf" target="_blank" rel="noopener"><span class="ico" aria-hidden="true"></span>PDF</a>
+        </div>
+        <div class="doc-meta">
+          <dl class="fields compact">
+            <dt>Issue Date</dt><dd id="doc-issue-date" data-field="issue_date">08/21/2026</dd>
+            <dt>Import Date</dt><dd id="doc-import-date" data-field="import_date">08/21/2026</dd>
+            <dt>Client</dt><dd id="doc-client" data-field="client">ClientCo Mortgage Servicing-41207</dd>
+          </dl>
+          <div>
+            <div class="actions-menu doc-actions" id="doc-actions" data-section="doc-actions">
+              <button type="button" class="actions-btn" id="doc-actions-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="doc-actions-menu">Actions</button>
+              <ul class="menu-list" id="doc-actions-menu" role="menu" aria-labelledby="doc-actions-btn" hidden>
+                <li role="none"><button type="button" role="menuitem" data-action="change-client">Change Document Client</button></li>
+                <li role="none"><button type="button" role="menuitem" data-action="reassign">Reassign Document</button></li>
+                <li role="none"><button type="button" role="menuitem" data-action="release">Release Document</button></li>
+                <li role="none"><button type="button" role="menuitem" data-action="release-get-next">Release Document And Get Next</button></li>
+                <li role="none"><button type="button" role="menuitem" data-action="get-next">Get Next Document</button></li>
+              </ul>
+            </div>
+            <dl class="fields compact">
+              <dt>Source</dt><dd id="doc-source" data-field="source">E-mail/Fax</dd>
+              <dt>Owner</dt><dd id="doc-owner" data-field="owner">ga002</dd>
+            </dl>
+          </div>
+        </div>
+
+        <!-- SUGGESTED ITEMS SEARCH -->
+        <form class="search" id="suggested-items-search" data-section="suggested-items-search" novalidate autocomplete="off">
+          <h2>Suggested Items Search</h2>
+          <div class="grid-form">
+            <label for="f-loan">Loan #</label>
+            <div><input id="f-loan" name="loan_number" class="mid" data-field="loan_number" value="97894"></div>
+
+            <label for="f-policy">Policy #</label>
+            <div><input id="f-policy" name="policy_number" class="mid" data-field="policy_number" value="I8UCH"></div>
+
+            <label for="f-prev-policy">Previous Policy #</label>
+            <div><input id="f-prev-policy" name="previous_policy_number" class="short" data-field="previous_policy_number" value=""></div>
+
+            <div class="wide">
+              <label for="f-addr1" class="sr-only">Property Address 1</label>
+              <input id="f-addr1" name="property_address_1" class="long" data-field="property_address_1" value="10 MARIONE CT" placeholder="Property Address 1">
+            </div>
+            <div class="wide">
+              <label for="f-addr2" class="sr-only">Property Address 2</label>
+              <input id="f-addr2" name="property_address_2" class="long placeholder-hint" data-field="property_address_2" value="" placeholder="Property Address 2">
+            </div>
+            <div class="wide inline">
+              <label for="f-city" class="sr-only">City</label>
+              <input id="f-city" name="city" class="city" data-field="city" value="BAYONNE" placeholder="City">
+              <label for="f-state" class="sr-only">State</label>
+              <select id="f-state" name="state" data-field="state"></select>
+            </div>
+            <div class="wide">
+              <label for="f-zip" class="sr-only">ZIP</label>
+              <input id="f-zip" name="zip" class="zip" data-field="zip" value="07002" placeholder="ZIP" inputmode="numeric">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn" id="btn-search" data-action="search">Search</button>
+            <button type="button" class="btn" id="btn-save-search" data-action="save-search">Save + Search</button>
+            <button type="button" class="btn quiet" id="btn-reset" data-action="reset">Clear</button>
+            <span class="status" id="search-status" role="status" aria-live="polite" data-state="idle"></span>
+          </div>
+        </form>
+      </section>
+
+      <!-- POLICY -->
+      <section class="card" id="policy-section" data-section="policy" data-policy-id="">
+        <header><span><span class="caret"></span>Policy</span></header>
+        <dl class="fields" id="policy-fields"></dl>
+      </section>
+
+      <!-- PAYEES -->
+      <section class="card" id="payees-section" data-section="payees">
+        <header><span><span class="caret"></span>Payees</span></header>
+        <h3 class="sub">Carrier</h3>
+        <dl class="fields indent" id="carrier-fields" data-subsection="carrier"></dl>
+        <h3 class="sub">Remit To</h3>
+        <dl class="fields indent" id="remit-fields" data-subsection="remit_to"></dl>
+        <h3 class="sub">Agent</h3>
+        <dl class="fields indent" id="agent-fields" data-subsection="agent"></dl>
+      </section>
+
+      <!-- MORTGAGEES -->
+      <section class="card" id="mortgagees-section" data-section="mortgagees">
+        <header><span><span class="caret"></span>Mortgagees</span></header>
+        <h3 class="sub">Mortgagee 1</h3>
+        <dl class="fields indent" id="mortgagee-1-fields" data-subsection="mortgagee_1"></dl>
+        <h3 class="sub">Mortgagee 2</h3>
+        <dl class="fields indent" id="mortgagee-2-fields" data-subsection="mortgagee_2"></dl>
+        <h3 class="sub">Mortgagee 3</h3>
+        <dl class="fields indent" id="mortgagee-3-fields" data-subsection="mortgagee_3"></dl>
+      </section>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <aside class="right">
+      <section class="card" id="todo-section" data-section="todo">
+        <header><span><span class="caret"></span>To-Do List</span></header>
+        <div class="loan-head"><span id="todo-loan" data-field="todo_loan">No Loan</span><div class="actions-menu" id="todo-actions" data-section="todo-actions">
+            <button type="button" class="actions-btn" id="todo-actions-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="todo-actions-menu">Actions</button>
+            <ul class="menu-list" id="todo-actions-menu" role="menu" aria-labelledby="todo-actions-btn" hidden>
+              <li role="none"><button type="button" role="menuitem" data-action="edit">Edit</button></li>
+              <li role="none"><button type="button" role="menuitem" data-action="done">Done</button></li>
+              <li role="none"><button type="button" role="menuitem" data-action="discard">Discard</button></li>
+              <li role="none"><button type="button" role="menuitem" data-action="automate">Automate</button></li>
+            </ul>
+          </div>
+        </div>
+        <dl class="fields compact">
+          <dt>Type</dt><dd id="todo-type" data-field="todo_type">Renewal</dd>
+          <dt>Status</dt><dd id="todo-status" data-field="todo_status">To Be Processed</dd>
+        </dl>
+      </section>
+
+      <section class="card" id="suggested-items-section" data-section="suggested-items">
+        <header><span><span class="caret"></span>Suggested Items</span></header>
+        <!-- RESULTS (stacked, one card per matching loan) -->
+        <section class="results" id="search-results" data-section="search-results" data-status="idle" data-count="0" aria-live="polite">
+          <div class="band"><span><span class="caret"></span>Search Results</span><span id="results-summary"></span></div>
+          <div id="results-body" class="empty">Run a search to list matching loans. Select a loan to load its current policy into the Policy, Payees and Mortgagees sections.</div>
+          <script type="application/json" id="search-results-json">[]</script>
+        </section>
+      </section>
+    </aside>
+  </div>
+
+  <footer>
+    <span>© 2003-2026 Example Financial, Inc. All Rights Reserved. | <a href="#privacy">Privacy Statement</a></span>
+    <span>Version: <span id="app-version" data-field="version">11.8.2.0</span> | 02</span>
+  </footer>
+</main>
+
+<!-- TO-DO EDIT POPUP: the edit form is rendered in an iframe; OK applies it to the To-Do List, Cancel discards. -->
+<dialog class="modal" id="todo-edit-dialog" aria-label="Edit This To-Do Item">
+  <form method="dialog">
+    <iframe id="todo-edit-frame" title="Edit This To-Do Item" data-section="todo-edit"></iframe>
+    <div class="btn-row modal-actions">
+      <button value="ok" class="btn" id="btn-todo-ok" data-action="todo-ok">OK</button>
+      <button value="cancel" class="btn quiet" id="btn-todo-cancel" data-action="todo-cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="text/html" id="todo-edit-template">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --panel: #e3e3e3; --text: #1a1a1a; --input-bg: #fff; --input-border: #9a9a9a; --accent: #2f6db5; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --panel: #2a2f35; --text: #e8e8e8; --input-bg: #14171a; --input-border: #555c66; --accent: #6ea3e6; } }
+  :root[data-theme="dark"] { --panel: #2a2f35; --text: #e8e8e8; --input-bg: #14171a; --input-border: #555c66; --accent: #6ea3e6; }
+  body { margin: 0; background: var(--panel); color: var(--text); font: 13px/1.35 Verdana, Geneva, "DejaVu Sans", Arial, sans-serif; }
+  form { padding: 8px 12px 14px; }
+  h1 { margin: 0 0 10px; font-size: 14px; font-weight: 700; }
+  .grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 5px 14px; align-items: center; }
+  label { font-size: 14px; }
+  select, input { font: inherit; color: var(--text); background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 2px; padding: 2px 4px; max-width: 100%; }
+  select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .wide { width: 100%; }
+</style>
+</head>
+<body>
+<form id="todo-edit-form" data-section="todo-edit-form" autocomplete="off">
+  <h1>Edit This To-Do Item</h1>
+  <div class="grid">
+    <label for="e-status">Status</label><div><select id="e-status" name="status" data-field="todo_status"></select></div>
+    <label for="e-csr">CSR</label><div><select id="e-csr" name="csr" class="wide" data-field="todo_csr"></select></div>
+    <label for="e-doc-type">Document Type</label><div><select id="e-doc-type" name="document_type" data-field="todo_document_type"></select></div>
+    <label for="e-comment">Comment</label><div><input id="e-comment" name="comment" class="wide" data-field="todo_comment"></div>
+  </div>
+</form>
+</body>
+</html>
+</script>
+
+<script>
+/* =========================================================================
+   CONFIGURATION
+   Set API_BASE_URL to your real search endpoint (POST {criteria} -> Policy[]).
+   When null, the built-in mock API scores loans from the properties endpoint.
+   ========================================================================= */
+const API_BASE_URL = null;           // e.g. "https://your-host/api/policies/search"
+const API_TIMEOUT_MS = 8000;
+const MOCK_API_BASE_URL = "http://localhost:9191";   // doc number -> {base}/ocr/<doc-number>, PDF chip -> {base}/pdf/<doc-number>
+
+/* ---------- Field definitions (label, key) ---------- */
+const POLICY_FIELDS = [
+  ["Policy Type","policy_type"],["Policy Term","policy_term"],["Effective Date","effective_date"],
+  ["Expiration Date","expiration_date"],["Premium Due Date","premium_due_date"],["Date Of Change","date_of_change"],
+  ["Balance Due Amount","balance_due_amount"],["Grandfathered","grandfathered"],["Cancellation Reason","cancellation_reason"],
+  ["Cancellation Date","cancellation_date"],["Cancellation Remarks","cancellation_remarks"],["Inception Date","inception_date"],
+  ["Liability Aggregate","liability_aggregate"],["Liability Occurrence","liability_occurrence"],["Cert Flood Zone","cert_flood_zone"],
+  ["Policy Issue Type","policy_issue_type"],["Cert # of Units","cert_units"],["Total Insurable Value","total_insurable_value"],
+  ["Authoritative RCV","authoritative_rcv"],["Compliance Aid","compliance_aid"],["FHA Compliance Aid","fha_compliance_aid"],
+  ["Insured Name 1","insured_name_1"],["Insured Name 2","insured_name_2"],["Insured Name 3","insured_name_3"],
+  ["NAIC Code","naic_code"],["Total Premium Amount","total_premium_amount"],["Coverage Amount","coverage_amount"],
+  ["Deductible Amount","deductible_amount"],["Deductible Percentage","deductible_percentage"],
+  ["Wind/Hurricane Excluded Flag","wind_excluded_flag","flag"],["Wind/Hurricane Deductible Amount","wind_deductible_amount"],
+  ["Wind/Hurricane Deductible Percentage","wind_deductible_percentage"],["Earthquake Excluded Flag","earthquake_excluded_flag","flag"],
+  ["Earthquake Deductible Amount","earthquake_deductible_amount"],["Earthquake Deductible Percentage","earthquake_deductible_percentage"]
+];
+const CARRIER_FIELDS = [["Carrier Name","carrier_name"],["Insurance Co 1","insurance_co_1"],["Insurance Co 2","insurance_co_2"],["NAIC Code","naic_code"],["Address","address"]];
+const REMIT_FIELDS   = [["Payee Name","payee_name"],["Remit Name","remit_name"],["Remit Name 2","remit_name_2"],["Address","address"]];
+const AGENT_FIELDS   = [["Agent Name 1","agent_name_1"],["Agent Name 2","agent_name_2"],["Address","address"],["Agent Phone #","agent_phone"],["Agent Fax #","agent_fax"],["Agent Email Address","agent_email"]];
+const MORTGAGEE_FIELDS = [["Name 1","name_1"],["Name 2","name_2"],["Loan Number","loan_number"],["Lien Position","lien_position"],["Lien Position Mortgage Order","lien_position_mortgage_order"],["Address","address"]];
+
+/* To-Do edit popup options */
+// Status choices depend on which Actions menu item opened the popup.
+const TODO_STATUSES = {
+  edit: ["BOA Haz","Call","Disbursement","HELOC","Inquiries","Lender Placed","Life of Loan","Manager Review","Mid-Terms","Misc","Pending","Research Queue","Return to Client","Return to Exampleco","To Be Processed"],
+  done: ["Already on File","Archive AOF","Complete","Not Tracked","Paid in Full","Policy Not Accepted","Sold"]
+};
+const TODO_CSRS = ["", "ga002"];
+const TODO_DOC_TYPES = ["", "Declaration Page", "Renewal", "Cancellation", "Reinstatement", "Invoice", "Other"];
+
+const US_STATES = ["","AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+
+/* Loans the search matches against, fetched from GET {MOCK_API_BASE_URL}/properties (one list shared by all documents).
+   The record's policy_numbers are what "Policy #" / "Previous Policy #" match against. */
+const MOCK_LOANS_CACHE = {};   // doc number -> Promise<Loan[]>
+function fetchMockLoans(docNumber) {
+  if (!MOCK_LOANS_CACHE[docNumber]) {
+    MOCK_LOANS_CACHE[docNumber] = (async () => {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), API_TIMEOUT_MS);
+      try {
+        const res = await fetch(`${MOCK_API_BASE_URL}/properties`, { signal: ctl.signal });
+        if (!res.ok) throw new Error(`Properties API returned ${res.status}`);
+        const data = await res.json();
+        // Normalise server field names (investor, usage) to the ones the results cards use.
+        return (Array.isArray(data) ? data : []).map(r => ({
+          ...r,
+          loan_number: String(r.loan_number ?? ""),
+          investor_code: r.investor_code ?? r.investor ?? "",
+          property_usage: r.property_usage ?? r.usage ?? "",
+          policy_numbers: (r.policy_numbers || []).split(",")
+        }));
+      } finally { clearTimeout(t); }
+    })();
+    MOCK_LOANS_CACHE[docNumber].catch(() => delete MOCK_LOANS_CACHE[docNumber]);   // retry on next search after a failure
+  }
+  return MOCK_LOANS_CACHE[docNumber];
+}
+
+/* =========================================================================
+   SEARCH API
+   window.LoanAPI.search(criteria) -> Promise<Loan[]>   (loans matching the search fields, best match first)
+   Real endpoint contract: POST API_BASE_URL, body {criteria}, response Loan[]
+   Mock (API_BASE_URL null): loads loans from GET MOCK_API_BASE_URL/properties and scores them locally
+   ========================================================================= */
+const LoanAPI = {
+  async search(criteria) {
+    if (API_BASE_URL) return this._remote(criteria);
+    return this._mock(criteria);
+  },
+  async _remote(criteria) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), API_TIMEOUT_MS);
+    try {
+      const res = await fetch(API_BASE_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ criteria }), signal: ctl.signal });
+      if (!res.ok) throw new Error(`Search API returned ${res.status}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : (data.results || []);
+    } finally { clearTimeout(t); }
+  },
+  async _mock(criteria) {
+    const loans = await fetchMockLoans(currentDocNumber());
+    const norm = s => (s || "").toString().trim().toUpperCase().replace(/\s+/g, " ");
+    const c = Object.fromEntries(Object.entries(criteria).map(([k, v]) => [k, norm(v)]));
+    const streetKey = a => norm(a).replace(/[^A-Z0-9 ]/g, "").replace(/\b(CT|COURT|ST|STREET|AVE|AVENUE|RD|ROAD|DR|DRIVE|BLVD)\b/g, "").replace(/E\b/g, "").replace(/\s+/g, " ").trim();
+    const scored = loans.map(loan => {
+      const policies = loan.policy_numbers.map(norm);
+      const [street, city = "", stateZip = ""] = (loan.property_address || "").split(",").map(x => norm(x));
+      let s = 0;
+      if (c.loan_number && norm(loan.loan_number).startsWith(c.loan_number)) s += c.loan_number === norm(loan.loan_number) ? 4 : 2;
+      if (c.policy_number && policies.some(p => p.startsWith(c.policy_number))) s += 3;
+      if (c.previous_policy_number && policies.some(p => p.includes(c.previous_policy_number))) s += 2;
+      if (c.property_address_1 && streetKey(street).includes(streetKey(c.property_address_1).slice(0, 6))) s += 2;
+      if (c.property_address_2 && norm(loan.property_address).includes(c.property_address_2)) s += 0.5;
+      if (c.city && city === c.city) s += 1;
+      if (c.zip && stateZip.endsWith(c.zip)) s += 1;
+      if (c.state && stateZip.startsWith(c.state)) s += 0.5;
+      return { loan, s };
+    });
+    const anyCriteria = Object.values(c).some(Boolean);
+    const results = (anyCriteria ? scored.filter(x => x.s > 0) : scored)
+      .sort((a, b) => b.s - a.s)
+      .map(x => ({ ...x.loan, match_score: Math.round(x.s * 10) / 10 }));
+    return results;
+  }
+};
+window.LoanAPI = LoanAPI;
+
+/* =========================================================================
+   RENDERING
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const state = { criteria: {}, results: [], selectedLoan: null, todo: { status: "", csr: "", document_type: "", comment: "", last_action: "" } };
+window.__WORKSPACE__ = state;   // scrape hook: live app state
+
+function renderFieldList(container, defs, data, prefix) {
+  container.innerHTML = "";
+  defs.forEach(([label, key, kind]) => {
+    const dt = document.createElement("dt"); dt.textContent = label;
+    const dd = document.createElement("dd");
+    dd.id = `${prefix}-${key}`; dd.dataset.field = key;
+    const val = (data && data[key]) ?? "";
+    if (kind === "flag") {
+      const sel = document.createElement("select");
+      sel.dataset.field = key; sel.id = `${prefix}-${key}-select`;
+      ["Not Set", "Yes", "No"].forEach(o => { const op = document.createElement("option"); op.value = o === "Not Set" ? "" : o; op.textContent = o; sel.appendChild(op); });
+      sel.value = val || ""; dd.appendChild(sel); dd.dataset.value = val || "";
+    } else {
+      dd.textContent = val; dd.dataset.value = val;
+      if (String(val).includes("\n")) { dd.innerHTML = ""; String(val).split("\n").forEach((l, i) => { if (i) dd.appendChild(document.createElement("br")); dd.appendChild(document.createTextNode(l)); }); }
+    }
+    container.append(dt, dd);
+  });
+}
+
+function renderPolicy(p) {
+  const sec = $("policy-section");
+  sec.dataset.policyId = p ? p.id : "";
+  sec.dataset.policyNumber = p ? p.policy_number : "";
+  renderFieldList($("policy-fields"), POLICY_FIELDS, p && p.policy, "policy");
+  renderFieldList($("carrier-fields"), CARRIER_FIELDS, p && p.carrier, "carrier");
+  renderFieldList($("remit-fields"), REMIT_FIELDS, p && p.remit_to, "remit");
+  renderFieldList($("agent-fields"), AGENT_FIELDS, p && p.agent, "agent");
+  for (let i = 0; i < 3; i++) renderFieldList($(`mortgagee-${i + 1}-fields`), MORTGAGEE_FIELDS, p && p.mortgagees && p.mortgagees[i], `mortgagee-${i + 1}`);
+}
+
+function renderResults(results) {
+  const body = $("results-body"), sec = $("search-results");
+  $("search-results-json").textContent = JSON.stringify(results);
+  sec.dataset.count = results.length;
+  $("results-summary").textContent = results.length ? `${results.length} loan${results.length === 1 ? "" : "s"}` : "";
+  if (!results.length) {
+    body.className = "empty";
+    body.textContent = "No loans matched these criteria. Widen the search (clear the loan number, policy number or address) and try again.";
+    return;
+  }
+  body.className = "";
+  // Each result is a stacked card; fields are split across two columns to fit the Suggested Items panel.
+  const colsLeft = [["Primary Borrower","primary_borrower"],["Co Borrower","co_borrower"],["Officer Code","officer_code"],
+    ["Investor","investor_code"],["Closing Date","closing_date"]];
+  const colsRight = [["Loan Type","loan_type"],["Closing Code","closing_code"],["Flood Zone","flood_zone"],
+    ["Lien Position","lien_position"],["Usage","property_usage"]];
+  const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o) ?? "";
+  const fieldList = (p, cols) => {
+    const dl = document.createElement("dl"); dl.className = "fields compact";
+    cols.forEach(c => {
+      const dt = document.createElement("dt"); dt.textContent = c[0];
+      const dd = document.createElement("dd"); dd.dataset.col = c[1]; if (c[2]) dd.className = c[2]; dd.textContent = get(p, c[1]);
+      dl.append(dt, dd);
+    });
+    return dl;
+  };
+  const list = document.createElement("ol");
+  list.className = "results-list"; list.id = "results-list"; list.setAttribute("aria-label", "Matching loans");
+  results.forEach((loan, i) => {
+    const li = document.createElement("li");
+    li.className = "result-item";
+    li.dataset.loanNumber = loan.loan_number; li.dataset.rowIndex = i;
+    li.tabIndex = 0; li.setAttribute("aria-selected", String(loan.loan_number === state.selectedLoan));
+    const title = document.createElement("div"); title.className = "row-title";
+    const name = document.createElement("span"); name.textContent = "Loan ";
+    const num = document.createElement("span"); num.dataset.col = "loan_number"; num.textContent = loan.loan_number;
+    name.appendChild(num);
+    const b = document.createElement("button"); b.type = "button"; b.className = "select-btn"; b.dataset.action = "select-loan"; b.textContent = "Load";
+    // Load opens the Loan Details page for this loan (?loan-number=...); clicking elsewhere on the row still selects it here.
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      const q = new URLSearchParams({ "loan-number": loan.loan_number });
+      location.href = `loan-detail-page.html?${q}`;
+    });
+    title.append(name, b);
+    const addr = document.createElement("div"); addr.className = "property"; addr.dataset.col = "property_address"; addr.textContent = loan.property_address || "";
+    const grid = document.createElement("div"); grid.className = "two-up";
+    grid.append(fieldList(loan, colsLeft), fieldList(loan, colsRight));
+    li.append(title, addr, grid);
+    li.addEventListener("click", () => selectLoan(loan.loan_number));
+    li.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectLoan(loan.loan_number); } });
+    list.appendChild(li);
+  });
+  body.innerHTML = ""; body.appendChild(list);
+}
+
+// Selecting a loan loads its current (first listed) policy into the Policy / Payees / Mortgagees sections.
+function selectLoan(loanNumber) {
+  const loan = state.results.find(r => r.loan_number === loanNumber);
+  if (!loan) return;
+  state.selectedLoan = loanNumber;
+  document.querySelectorAll("#results-list .result-item").forEach(li => li.setAttribute("aria-selected", String(li.dataset.loanNumber === loanNumber)));
+  const policy = (loan.policies || [])[0] || null;
+  renderPolicy(policy);
+  $("todo-loan").textContent = `Loan ${loan.loan_number}`;
+  setStatus(policy ? `Loaded loan ${loan.loan_number} (policy ${policy.policy_number}).` : `Loaded loan ${loan.loan_number} (no policy on file).`, "ok");
+  document.dispatchEvent(new CustomEvent("loan:selected", { detail: loan }));
+}
+
+// Point the Document header (#document-number, #document-pdf-link) at the given document number.
+function renderDocument(docNumber) {
+  const n = encodeURIComponent(docNumber);
+  const link = $("document-number");
+  link.textContent = docNumber; link.href = `${MOCK_API_BASE_URL}/ocr/${n}`; link.dataset.value = docNumber;
+  const pdf = $("document-pdf-link");
+  pdf.href = `${MOCK_API_BASE_URL}/pdf/${n}`; pdf.dataset.value = docNumber;
+  $("document-section").dataset.documentNumber = docNumber;
+}
+
+// Document number shown in the Document header (?doc-number=..., else the DEFAULT_DOC placeholder).
+function currentDocNumber() {
+  const link = $("document-number");
+  return (link.dataset.value || link.textContent || "").trim() || "DEFAULT_DOC";
+}
+
+function setStatus(msg, kind) {
+  const el = $("search-status"); el.textContent = msg; el.dataset.state = kind || "idle";
+}
+
+/* ---------- Criteria <-> form ---------- */
+const CRITERIA_KEYS = ["loan_number","policy_number","previous_policy_number","property_address_1","property_address_2","city","state","zip"];
+function readCriteria() {
+  const f = $("suggested-items-search");
+  return Object.fromEntries(CRITERIA_KEYS.map(k => [k, (f.elements[k].value || "").trim()]));
+}
+function writeCriteria(c) {
+  const f = $("suggested-items-search");
+  CRITERIA_KEYS.forEach(k => { if (k in c && f.elements[k]) f.elements[k].value = c[k]; });
+}
+function syncUrl(c) {
+  try {
+    const u = new URL(location.href);
+    CRITERIA_KEYS.forEach(k => c[k] ? u.searchParams.set(k, c[k]) : u.searchParams.delete(k));
+    history.replaceState(null, "", u);
+  } catch (_) {}
+}
+
+async function runSearch({ save = false } = {}) {
+  const criteria = readCriteria();
+  state.criteria = criteria;
+  if (save) { try { localStorage.setItem("suggested-items-search:criteria", JSON.stringify(criteria)); } catch (_) {} }
+  syncUrl(criteria);
+  const btns = [$("btn-search"), $("btn-save-search")];
+  btns.forEach(b => b.disabled = true);
+  const sec = $("search-results"); sec.dataset.status = "loading";
+  setStatus(save ? "Saved. Searching…" : "Searching…", "loading");
+  try {
+    const results = await LoanAPI.search(criteria);
+    state.results = results; state.selectedLoan = null;
+    sec.dataset.status = "done";
+    renderResults(results);
+    setStatus(results.length ? `${results.length} result${results.length === 1 ? "" : "s"}. Select a loan to load it.` : "No results.", "ok");
+    if (results.length) selectLoan(results[0].loan_number);
+    document.dispatchEvent(new CustomEvent("search:complete", { detail: { criteria, results } }));
+  } catch (err) {
+    sec.dataset.status = "error"; state.results = [];
+    renderResults([]);
+    $("results-body").textContent = `Search failed: ${err.message}. Check the API endpoint and try again.`;
+    setStatus("Search failed.", "error");
+  } finally { btns.forEach(b => b.disabled = false); }
+}
+
+/* ---------- Actions menus (Document panel, To-Do List) ---------- */
+// Wires the dropdown with id `${prefix}-actions`; onAction(action) runs for the clicked item's data-action.
+function initActionsMenu(prefix, onAction) {
+  const root = $(`${prefix}-actions`), btn = $(`${prefix}-actions-btn`), menu = $(`${prefix}-actions-menu`);
+  const setOpen = open => {
+    menu.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+    if (open) menu.querySelector("button").focus();
+  };
+  btn.addEventListener("click", () => setOpen(menu.hidden));
+  menu.addEventListener("click", e => {
+    const item = e.target.closest("button[data-action]"); if (!item) return;
+    setOpen(false);
+    onAction(item.dataset.action);
+  });
+  menu.addEventListener("keydown", e => {
+    const items = [...menu.querySelectorAll("button")], i = items.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); setOpen(false); btn.focus(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+  });
+  document.addEventListener("click", e => { if (!menu.hidden && !root.contains(e.target)) setOpen(false); });
+}
+
+// Document actions: recorded and announced for listeners; no backend call in this mock.
+function documentAction(action) {
+  $("document-section").dataset.lastAction = action;
+  document.dispatchEvent(new CustomEvent("document:action", { detail: { action, document_number: currentDocNumber() } }));
+}
+
+/* ---------- To-Do Edit popup ---------- */
+
+function renderTodo() {
+  const t = state.todo, sec = $("todo-section");
+  $("todo-status").textContent = t.status; $("todo-status").dataset.value = t.status;
+  sec.dataset.csr = t.csr; sec.dataset.documentType = t.document_type; sec.dataset.comment = t.comment; sec.dataset.lastAction = t.last_action;
+}
+
+// Edit and Done open the edit popup; Discard / Automate are recorded and announced for listeners (no backend call in this mock).
+function todoAction(action) {
+  if (action === "edit" || action === "done") return openTodoEdit(action);
+  state.todo.last_action = action;
+  renderTodo();
+  document.dispatchEvent(new CustomEvent("todo:action", { detail: { action, todo: { ...state.todo } } }));
+}
+
+function openTodoEdit(action = "edit") {
+  const dlg = $("todo-edit-dialog"), frame = $("todo-edit-frame");
+  dlg.dataset.action = action;   // which menu item opened the popup; applied on OK
+  frame.onload = () => {
+    const d = frame.contentDocument;
+    // A current value missing from the list leaves the select empty (value "").
+    const fill = (id, opts, val) => { const s = d.getElementById(id); opts.forEach(o => s.add(new Option(o, o))); s.value = val; };
+    fill("e-status", TODO_STATUSES[action], state.todo.status);
+    fill("e-csr", TODO_CSRS, state.todo.csr);
+    fill("e-doc-type", TODO_DOC_TYPES, state.todo.document_type);
+    d.getElementById("e-comment").value = state.todo.comment;
+    const theme = document.documentElement.dataset.theme; if (theme) d.documentElement.dataset.theme = theme;
+    // Enter submits as OK; Escape inside the iframe never reaches the dialog, so handle it here.
+    d.getElementById("todo-edit-form").addEventListener("submit", e => { e.preventDefault(); dlg.close("ok"); });
+    d.addEventListener("keydown", e => { if (e.key === "Escape") dlg.close("cancel"); });
+    d.getElementById("e-status").focus();
+  };
+  frame.srcdoc = $("todo-edit-template").textContent.trim();
+  dlg.returnValue = "";
+  dlg.showModal();
+}
+
+function onTodoEditClosed() {
+  const dlg = $("todo-edit-dialog");
+  if (dlg.returnValue === "ok") {
+    const f = $("todo-edit-frame").contentDocument.getElementById("todo-edit-form");
+    ["status", "csr", "document_type", "comment"].forEach(k => state.todo[k] = f.elements[k].value.trim());
+    if (!state.todo.status) state.todo.status = $("todo-status").textContent.trim();   // no status chosen: keep the current one
+    state.todo.last_action = dlg.dataset.action || "edit";
+    renderTodo();
+    document.dispatchEvent(new CustomEvent("todo:edited", { detail: { action: state.todo.last_action, ...state.todo } }));
+  }
+  $("todo-actions-btn").focus();
+}
+
+function initActions() {
+  state.todo.status = $("todo-status").textContent.trim();
+  initActionsMenu("doc", documentAction);
+  initActionsMenu("todo", todoAction);
+  $("todo-edit-dialog").addEventListener("close", onTodoEditClosed);
+}
+
+/* ---------- Init ---------- */
+(function init() {
+  const stateSel = $("f-state");
+  US_STATES.forEach(s => { const o = document.createElement("option"); o.value = s; o.textContent = s; stateSel.appendChild(o); });
+  stateSel.value = "NJ";
+
+  // ?doc-number=<n> selects the document shown in the Document header.
+  try {
+    const docNumber = (new URL(location.href).searchParams.get("doc-number") || "").trim();
+    if (docNumber) renderDocument(docNumber);
+  } catch (_) {}
+
+  initActions();
+
+  // Render the empty Policy / Payees / Mortgagees sections until a loan is loaded.
+  renderPolicy(null);
+
+  // Restore saved criteria, then URL params (URL wins), so scrapers can deep-link: ?loan_number=97894
+  try { const saved = localStorage.getItem("suggested-items-search:criteria"); if (saved) writeCriteria(JSON.parse(saved)); } catch (_) {}
+  try {
+    const u = new URL(location.href); const fromUrl = {};
+    CRITERIA_KEYS.forEach(k => { if (u.searchParams.has(k)) fromUrl[k] = u.searchParams.get(k); });
+    if (Object.keys(fromUrl).length) { writeCriteria(fromUrl); runSearch(); }
+  } catch (_) {}
+
+  $("suggested-items-search").addEventListener("submit", e => { e.preventDefault(); runSearch(); });
+  $("btn-save-search").addEventListener("click", () => runSearch({ save: true }));
+  $("btn-reset").addEventListener("click", () => { writeCriteria(Object.fromEntries(CRITERIA_KEYS.map(k => [k, ""]))); $("f-state").value = ""; setStatus("", "idle"); });
+
+  // Expose a programmatic hook for automation: window.WorkspaceApp.search({...})
+  window.WorkspaceApp = { search: c => { writeCriteria(c || {}); return runSearch(); }, saveAndSearch: c => { writeCriteria(c || {}); return runSearch({ save: true }); }, selectLoan, todoAction, documentAction, getState: () => state, getResults: () => JSON.parse($("search-results-json").textContent) };
+})();
+</script>
+</body>
+</html>

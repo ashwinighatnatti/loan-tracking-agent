@@ -1,0 +1,13 @@
+carrier_id|name1|name2|name3|address1|address2|city|state|zip|phone|naic_code|payee_name
+C-001|Acme Insurance|||100 Main St|Suite 200|Austin|TX|78701|800-555-0100|12345|Acme Insurance Remittance
+C-002|Globe Mutual|||2500 Market St||San Francisco|CA|94114|800-555-0200|67890|Globe Mutual Payment Center
+C-003|Cedar Mutual Guard Insurance Companies|||PO Box 44000||Dayton|OH|45401-4400|(800) 555-0142|42390|Cedar Mutual GUARD
+C-004|Cedar Mutual Guard Insurance Companies|Overnight Payments||12-R W Fairview St||Brookfield|OH|44403|(800) 555-0142|42390|Cedar Mutual GUARD
+C-005|Sample Carrier 30 Insurance Company|||PO Box 55001||Dallas|TX|75201-5001|(800) 555-0143|99002|Sample Carrier 30 Payment Processing Center
+C-006|Sample Carrier 30 Insurance Company|Remittance Processing||PO Box 55002||Dallas|TX|75201-5002|(800) 555-0143|99002|Sample Carrier 30 Payment Processing Center
+C-007|Lone Star Property & Casualty|||8100 N Mopac Expy|Bldg 3|Austin|TX|78759|512-555-0177|30411|Lone Star P&C Premium Accounting
+C-008|Coastal Wind Underwriters|Windstorm Division||PO Box 14920||Houston|TX|77221-4920|713-555-0142|28877|Coastal Wind Premium Trust
+C-009|Heartland Mutual Fire Insurance Co|||400 Grand Ave||Des Moines|IA|50309|515-555-0190|15520|Heartland Mutual Billing
+C-010|Pinecrest Home Insurance|Attn: Policy Services||1200 Peachtree St NE|Floor 9|Atlanta|GA|30309|404-555-0123|33106|Pinecrest Home Insurance
+C-011|Sunshine State Homeowners Ins Co|||PO Box 31208||Tampa|FL|33631-3208|813-555-0166|41022|Sunshine State Premium Lockbox
+C-012|Great Plains Casualty Company|c/o Midwest Payment Services|Lockbox 7741|PO Box 7741||Omaha|NE|68103-0741|402-555-0151|26654|Midwest Payment Services

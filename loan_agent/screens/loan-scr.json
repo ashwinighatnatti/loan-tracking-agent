@@ -1,0 +1,362 @@
+{
+  "loan_number": "7750646441",
+  "primary_borrower": "NORA A FENWICK",
+  "co_borrower": "",
+  "loan_type": "Conventional",
+  "govt_loan_type": "Fannie Mae",
+  "escrow_status": "",
+  "loan_origination_method": "Unknown",
+  "original_balance": 319999.0,
+  "upb": 275511.05,
+  "commitment_amount": 0.0,
+  "closing_date": "09/13/2019",
+  "created_date": "10/09/2023",
+  "date_of_note": "10/01/2023",
+  "loan_originated": "",
+  "loan_reported_to_app": "",
+  "maturity_date": "10/01/2049",
+  "branch": "PQ",
+  "investor_code": "Summit Residential Mortgage-SRMNP1",
+  "organization": "$CCMS - ClientCo Mortgage Servicing",
+  "officer_code": "005",
+  "client_system": "Servicing Platform",
+  "asset_manager": "Brightfield",
+  "contacts": [],
+  "comments": [
+    {
+      "datetime": "06/28/2024 2:47 PM",
+      "type": "",
+      "text": "Insurance paymnet for line id 40524685 mailed to confirmed carrier remit to address PO Box 55001 Dallas TX 75266"
+    },
+    {
+      "datetime": "06/28/2024 1:30 PM",
+      "type": "",
+      "text": "Home Owner MARA ELLISON callback# calling into verify we have current insurance inof toget escrow analsysis done."
+    }
+  ],
+  "mortgagee": [],
+  "collateral": [
+    {
+      "property_id": "21433117",
+      "property_line_type": "",
+      "property_info": "56 HAWTHORN ST",
+      "property_description": "Primary",
+      "property_type": "TownHouse",
+      "property_usage": "Residential",
+      "occupancy_status": "Occupied",
+      "property_status": "",
+      "number_of_property": "1 of 1",
+      "property_address_1": "56 HAWTHORN ST",
+      "city": "BURLINGTON",
+      "state": "VT",
+      "zip": "05401",
+      "property_address": "56 HAWTHORN ST BURLINGTON, VT 05401",
+      "appraised_value": 399999.0,
+      "lien_position": "1st",
+      "flood_zone": "X",
+      "flood_waiver": "N",
+      "flood_required": "N",
+      "loma_on_file": "N",
+      "flood_determination_date": "",
+      "insurable_value": 0.0,
+      "actual_cash_value": 0.0,
+      "required_hazard_coverage": 0.0,
+      "required_flood_coverage": 0.0,
+      "required_earthquake_coverage": 0.0,
+      "grandfathered": false,
+      "chk_track_only": false,
+      "insurance_lines": [
+        {
+          "line_id": "85160742",
+          "line_type": "HAZARD",
+          "policy_number": "KAUY290374",
+          "policy_type": "HAZARD",
+          "linked_property_id": "21433117",
+          "is_lender_placed": false,
+          "carrier_name": "Cedar Mutual Guard Insurance Companies",
+          "carrier_address": "PO Box 44000, Dayton, OH 45401-4400 USA",
+          "carrier_phone": "(800) 555 0142",
+          "carrier_global_payee_regular_mail_address": "CEDAR MUTUAL GUARD, PO BOX 44000, DAYTON, OH 45401-4400",
+          "carrier_global_payee_overnight_mail_address": "Cedar Mutual GUARD, 12-R W Fairview St, Brookfield, OH 44403",
+          "payee_name": "",
+          "remit_to_name": "",
+          "remit_to_name_2": "",
+          "remit_to_address": "",
+          "chk_pay_agent": true,
+          "chk_mail_payment_to_agent": true,
+          "agent_name": "SAMPLE ASSOCIATES AGENCY",
+          "agent_name_2": "",
+          "agent_address_1": "100 SAMPLE AVENUE",
+          "agent_address_2": "",
+          "agent_address": "",
+          "agent_city": "UNION",
+          "agent_state": "NJ",
+          "agent_zip": "07099",
+          "agent_country": "USA",
+          "agent_email": "",
+          "agent_phone": "(908) 555 0155",
+          "agent_fax": "",
+          "effective_date": "09/13/2025",
+          "expiration_date": "09/13/2026",
+          "premium_due_date": "09/13/2025",
+          "policy_term": "12 Months",
+          "escrow_status": "Y",
+          "earliest_cancellation_date": "09/13/2026",
+          "earliest_cancellation_or_reinstatement_reason": "Cancel - NonRenewal",
+          "cancel_or_reinstate_date": "09/13/2026",
+          "cancel_or_reinstate_reason": "Cancel - NonRenewal",
+          "coverage_amount": 445677.0,
+          "cert_flood_zone": "X",
+          "no_replacement_coverage": false,
+          "deductible_amount": 0.0,
+          "deductible_percentage": 0.0,
+          "premium_amount": 9999.99,
+          "additional_amount_due": 99999.99,
+          "wind_excluded": false,
+          "wind_deductible_amount": 1000.0,
+          "wind_deductible_percentage": 0.0,
+          "earthquake_excluded": false,
+          "earthquake_deductible": 0.0,
+          "earthquake_deductible_percentage": 0.0,
+          "last_payment_date": "08/25/2025",
+          "last_premium_amount": 2446.32,
+          "last_payee": "Cedar-11-CEDAR MUTUAL GUARD PO BOX 44000, DAYTON, OH 45401-4400",
+          "last_cheque_info": "3139695",
+          "chk_make_payment": true,
+          "chk_expedite_payment": false,
+          "chk_additional_amount_due": false,
+          "chk_expedite_additional_amount_due": false,
+          "chk_funding_only": false,
+          "chk_issue_manual_check_for_additional_due": "",
+          "funding_only_comment": "",
+          "note_comments": [],
+          "warnings": [
+            "The document represents a renewal paymnet, but the document expiration date is 9/13/2026 is not greater than the document's policyt Effective date 9/13/2026",
+            "The document appears to be a renewal payment, but the document does not contain a Remit To",
+            "The document cannot suggest a carrier, please review the selected carrier"
+          ],
+          "deficiencies": [
+            {
+              "title": "Mid-Term Bwr Notified to Return Refund",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Insurance Carrier Rating",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Deductible",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "ACORD Form Unacceptable",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Declaration Required",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Mortgagee Clause",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Property Address on Policy",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Name Insured",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            }
+          ]
+        },
+        {
+          "line_id": "16052182",
+          "line_type": "WIND",
+          "policy_number": "KAUY290374",
+          "policy_type": "WIND",
+          "linked_property_id": "21433117",
+          "is_lender_placed": false,
+          "carrier_name": "Cedar Mutual Guard Insurance Companies",
+          "carrier_address": "PO Box 44000, Dayton, OH 45401-4400 USA",
+          "carrier_phone": "(800) 555 0142",
+          "carrier_global_payee_regular_mail_address": "CEDAR MUTUAL GUARD, PO BOX 44000, DAYTON, OH 45401-4400",
+          "carrier_global_payee_overnight_mail_address": "Cedar Mutual GUARD, 12-R W Fairview St, Brookfield, OH 44403",
+          "payee_name": "",
+          "remit_to_name": "",
+          "remit_to_name_2": "",
+          "remit_to_address": "",
+          "chk_pay_agent": true,
+          "chk_mail_payment_to_agent": true,
+          "agent_name": "SAMPLE ASSOCIATES AGENCY",
+          "agent_name_2": "",
+          "agent_address_1": "100 SAMPLE AVENUE",
+          "agent_address_2": "",
+          "agent_address": "",
+          "agent_city": "UNION",
+          "agent_state": "NJ",
+          "agent_zip": "07099",
+          "agent_country": "USA",
+          "agent_email": "",
+          "agent_phone": "(908) 555 0155",
+          "agent_fax": "",
+          "effective_date": "09/13/2025",
+          "expiration_date": "09/13/2026",
+          "premium_due_date": "09/13/2025",
+          "policy_term": "12 Months",
+          "escrow_status": "Y",
+          "earliest_cancellation_date": "09/13/2026",
+          "earliest_cancellation_or_reinstatement_reason": "Cancel - NonRenewal",
+          "cancel_or_reinstate_date": "09/13/2026",
+          "cancel_or_reinstate_reason": "Cancel - NonRenewal",
+          "coverage_amount": 445677.0,
+          "cert_flood_zone": "X",
+          "no_replacement_coverage": false,
+          "deductible_amount": 0.0,
+          "deductible_percentage": 0.0,
+          "premium_amount": 9999.99,
+          "additional_amount_due": 99999.99,
+          "wind_excluded": false,
+          "wind_deductible_amount": 1000.0,
+          "wind_deductible_percentage": 0.0,
+          "earthquake_excluded": false,
+          "earthquake_deductible": 0.0,
+          "earthquake_deductible_percentage": 0.0,
+          "last_payment_date": "08/25/2025",
+          "last_premium_amount": 2446.32,
+          "last_payee": "Cedar-11-CEDAR MUTUAL GUARD PO BOX 44000, DAYTON, OH 45401-4400",
+          "last_cheque_info": "3139695",
+          "chk_make_payment": true,
+          "chk_expedite_payment": false,
+          "chk_additional_amount_due": false,
+          "chk_expedite_additional_amount_due": false,
+          "chk_funding_only": false,
+          "chk_issue_manual_check_for_additional_due": "",
+          "funding_only_comment": "",
+          "note_comments": [],
+          "warnings": [
+            "The document represents a renewal paymnet, but the document expiration date is 9/13/2026 is not greater than the document's policyt Effective date 9/13/2026",
+            "The document appears to be a renewal payment, but the document does not contain a Remit To",
+            "The document cannot suggest a carrier, please review the selected carrier"
+          ],
+          "deficiencies": [
+            {
+              "title": "Mid-Term Bwr Notified to Return Refund",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Insurance Carrier Rating",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Deductible",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "ACORD Form Unacceptable",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Declaration Required",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Mortgagee Clause",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Property Address on Policy",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            },
+            {
+              "title": "Name Insured",
+              "flag": false,
+              "corrected": false,
+              "waived": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "deficiencies": [
+    {
+      "title": "Mid-Term Bwr Notified to Return Refund",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "Insurance Carrier Rating",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "Deductible",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "ACORD Form Unacceptable",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "Declaration Required",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "Mortgagee Clause",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "Property Address on Policy",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    },
+    {
+      "title": "Name Insured",
+      "flag": false,
+      "corrected": false,
+      "waived": false
+    }
+  ]
+}

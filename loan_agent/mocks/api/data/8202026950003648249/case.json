@@ -1,0 +1,72 @@
+{
+    "document_number":"8202026950003648249",
+    "document_type": "renewal",
+    "print_date": "08/25/2026",
+
+    "borrower": "WILLIAM T WEXFORD",
+    "co_borrower": "DIANA WEXFORD",
+    "loan_number": "0520359554",
+    
+    "property_address": "305 AVENUE F, BAYONNE, NJ 07002",
+    "property_address_1": "305 AVENUE F",
+    "property_address_2": "",
+    "property_city": "BAYONNE",
+    "property_state": "NJ",
+    "property_zip": "07002",
+
+    "policy_number": "KAUY290374",
+    "policy_type": "HAZARD",
+
+    "carrier_name": "Cedar Mutual Guard Insurance Companies",
+    "carrier_address": "PO Box 44000, Dayton, OH 45401-4400 USA",
+    "carrier_phone": "(800) 555 0142",
+    "carrier_global_payee_regular_mail_address": "CEDAR MUTUAL GUARD, PO BOX 44000, DAYTON, OH 45401-4400",
+    "carrier_global_payee_overnight_mail_address": "Cedar Mutual GUARD, 12-R W Fairview St, Brookfield, OH 44403",
+
+    "payee_name": "",
+    "remit_to_name": "",
+    "remit_to_name_2": "",
+    "remit_to_address": "",
+
+    "agent_name": "SAMPLE ASSOCIATES AGENCY",
+    "agent_name_2": "",
+    "agent_address": "",
+    "agent_address_1": "100 SAMPLE AVENUE",
+    "agent_address_2": "",
+    "agent_city": "UNION",
+    "agent_state": "NJ",
+    "agent_zip": "07099",
+    "agent_country": "USA",
+    "agent_email": "",
+    "agent_phone": "(908) 555 0155",
+    "agent_fax": "",
+
+    "effective_date": "09/13/2025",
+    "expiration_date": "09/13/2026",
+    "premium_due_date": "09/13/2025",
+    "earliest_cancellation_date": "09/13/2026",
+    "cancel_or_reinstate_date": "09/13/2026",
+    "policy_term": "12 months",
+
+    "escrow_status": "Y",
+    "earliest_cancellation_or_reinstatement_reason": "Cancel - NonRenewal",
+    "cancel_or_reinstate_reason": "Cancel - NonRenewal",
+
+    "coverage_amount": 445677.00,
+    "premium_amount": 9999.99,
+    "additional_amount_due": 99999.99,
+    "deductible_amount": 0.0,
+    "deductible_percentage": 0.00,
+
+    "wind_excluded": false,
+    "wind_deductible_amount": 1000.00,
+    "wind_deductible_percentage": 0.00,
+
+    "wind_hurricane_deductible_amount": 0.0,
+    "wind_hurricane_deductible_percentage": 0.0,
+    
+    "earthquake_excluded": false,
+    "earthquake_deductible": 0.0,
+    "earthquake_deductible_percentage": 0.0
+
+}

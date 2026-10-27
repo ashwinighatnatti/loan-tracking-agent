@@ -1,0 +1,286 @@
+
+Click on Document Search
+	Select Client - ClientCo Mortgage Servicing
+	Select Document Type - Eg Renewal
+	Select Document Source - Eg EDI
+	Select Status -  Lender Placed 
+	Select CSR - N/A
+	Click on Submit
+
+Click on Work
+Open the PDF under Unfinished documents
+	
+Check if have received loan suggestion . If YES
+	Document extraction from PDF need to be done
+	Validation of Borrower Name & Property Address from IIM to PDF 
+
+Check if have received loan suggestion . If NO
+	Utilize the suggested items search to find the loan
+		Insert Loan number and click on save+search
+		If not found utilize policy number. Click on save+search 
+		If not found utilize Property Address. Click on save+search 
+		If found the loan by suggested item search (15.6,15.7,15.8)
+
+Click on +sign to attached the loan and start processing
+
+If unable to find loan by suggested item search (15.6,15.7,15.8) 
+Then Use Loan Search Tab to Advance Search
+
+Search the loan number with a combination of 
+	loan no /Policy no/ name & address of borrower 
+	as per the document received with the loan
+
+If found the loan by Advance search
+	Validation of Borrower Name & Property Address from PDF
+	
+That loan number can then be placed in the workspace and searched again to be updated
+	Attach the loan with the matching information
+	Add the loan in To-do list
+User Should click on the loan number to proceed 
+	
+In loan details screen and ready to start processing the loan
+Review the three major portions involved in processing a loan: 
+			Loan Information, 
+			Collateral Information, 
+			and Insurance Lines
+
+Validation of  mortgage 
+	Loan Information - 
+		Borrower name
+		Closing date
+		Maturity date
+		Date of note
+		Unpaid PB
+		original balance
+		Investor
+	 	Loan type 
+	
+	Collateral Info: property related information such as property address
+ 		Verify Property type
+			SingleFamilyDetached
+			1-4 Mutli Family Detached
+			Multi Fam - 3 Unit
+			Condo 
+			Multi Family 2-4Unit
+			Condominium
+		Lien position:	1st 2nd
+	
+	[Button] Link properties 
+		If there is an exclamation mark (!) next to link properties
+			First verify the name and the address of the borrower and then attach the loan with the active loan & save collateral on this segment
+			Only attach a collateral equivalent if the borrower’s name and property addresses match, but the loan number is different
+		Else
+			skip the above step 
+		End If		
+
+		Flood zone
+			If find multi collaterals/ addresses for borrower with level number attached with the loan 
+
+	Section shows property insurance related details like different policy lines basis peril - Hazard
+	Hazard document received 
+
+	Do start updating Insurance Lines
+	
+	Click on Hazard line to make updates
+	Validate the Carrier Name and Address with document if it is matching 
+		If Global Payee is reflected correctly 
+		If Carrier Name and Address is not matching 
+	Go inside the carrier search 
+		Search with carrier property address if not 
+		Do search with Carrier Name
+		Once find the carrier Name & Address which is linked with Golbal payee 
+		Select the right carrier 
+		Update Agent Details 
+			"Agent Name"
+			Agent Address 1
+			Agent Address 2
+			Agent City
+			Agent State
+			Agent Zip
+			Agent Country
+			Agent Email
+			Agent Phone
+			Agent Fax
+	Escrow status verification - IF Escrow YES
+		Update the policy number 
+		Update the Policy term dates
+
+Coverage amount
+
+	Deductible
+		Wind deductible
+			Premium amount If not
+		Balance Due Amount
+			If renewal policy is received and payment is required for escrow account only
+		Check payment check box
+			Do cross validated on Deficiencies Request letters
+			ACORD Form Unacceptable
+
+	Deductible
+		Mid-Term Bwr Notified to Return Refund
+		Insurance Carrier Rating
+
+	Declaration Required
+
+	Mortgagee Clause
+		Name Insured
+		Property Address on Policy
+		Escrow status verification - IF Escrow NO
+		Update the policy number 
+		Update the Policy term dates
+		Coverage amount
+
+	Deductible
+		Wind deductible
+		Premium amount If not
+		Balance Due Amount
+		Even though it is renewal policy Do not make payment. Since it is non escrow loan
+		Do cross validated on Deficiencies Request letters
+		ACORD Form Unacceptable
+
+	Deductible
+		Mid-Term Bwr Notified to Return Refund
+		Insurance Carrier Rating
+
+	Declaration Required
+		Mortgagee Clause
+		Name Insured
+		Property Address on Policy
+		Basis the carrier change document received in the middle of  term of previous policy
+		Hazard document received Do start updating Insurance Lines
+
+	Click on Hazard line to make updates
+		Carrier Name and Address
+			Do get inside the carrier search 
+			Do Search with carrier property address if not 
+			Do Search with Carrier Name
+			Once find the carrier Name & Address which is linked with Golbal payee 
+		Select the right carrier 
+			Update Agent Details 
+				"Agent Name"
+				Agent Address 1
+				Agent Address 2
+				Agent City
+				Agent State
+				Agent Zip
+				Agent Country
+				Agent Email
+				Agent Phone
+				Agent Fax
+		Update the Midterm comment 
+			( Highlighting the change of previous carrier and policy number with new one)
+	Escrow status verification
+		Update the policy number 
+		Update the Policy term dates
+		Coverage amount
+	Deductible
+		Wind deductible
+		Premium amount If not
+		Balance Due Amount
+	
+		Do check the payment check box
+		Do mark Midterm deficiencies letter 
+		Basis the carrier change document received at end of the term or cancellation of previous policy
+		Do get inside the carrier search 
+		Do Search with carrier property address if not 
+		Do search with Carrier Name
+		Once find the carrier Name & Address which is linked with Golbal payee 
+			Select the right carrier 
+		Do update Agent Details 
+			"Agent Name"
+			Agent Address 1
+			Agent Address 2
+			Agent City
+			Agent State
+			Agent Zip
+			Agent Country
+			Agent Email
+			Agent Phone
+			Agent Fax
+		Update the Newbusiness comment ( Highlighting the change of previous carrier and policy number with new one)
+		Do revome the cancellation date and Reason 
+	Escrow status verification
+		Update the policy number 
+		Update the Policy term dates
+		Coverage amount
+	
+	Deductible
+		Wind deductible
+			Premium amount If not
+			Balance Due Amount
+			Do check the payment check box
+				After following the step 15 to 20. 
+			Do then be able to indentify if the loan is Lender placed 
+		
+	Once you go to loan details. You find Red highlighted summary box with policy lapse information 
+		LP box allows a user to identify Lender Placement for a prior term that needs to be adjusted,cancelled and manual LP adjustment via the Lender Placed Summary box.
+		
+Tab: Transaction History [ Displays all payment refunds claims and LP transactions]
+
+	Add – the action taken when LP Insurance needs to be started.
+	Terminate – the action taken when a preferred policy has been received but LP Do remain active prior to the policy’s effective date
+	Flat Cancel – the action taken when preferred policy has been received for the duration LP was active
+	Lapse – (in coverage) the time preferred coverage was not active or is not on file
+
+Screen - Exposure Analysis: Displays the requirements for LP
+	Full Exposure – The type of LP when no preferred coverage is on file for that time period
+	Insufficient – (or insufficiency) the type of LP when preferred coverage is on file but does not meet the required coverage amount
+	Required Coverage Amount – The amount of coverage required for the property, found in Exposure Analysis
+			COVERAGE TYPE
+			•RU = Flood Insurance   	           •WO = Wind Insurance                •    RO = Hazard Insurance
+			<< Picture >>
+	Identify Lender placed (LPI) based on below Summary box.
+			Picture
+			Picture
+	Type: Insurance peril for which LP is added
+	Department: LP Department
+	Coverage: See above chart
+	Level: Corresponds to the appropriate collateral level
+
+		Effective date: Effective date of LP
+		Status: Shows LP status active or terminated
+		Active: LP is active
+		Terminated: LP is terminated, however there is a lapse
+
+		Exposure: LP is added due to no insurance coverage for term
+		Insufficiency: LP is added for insufficient coverage
+		Address: LP added for the specified Property address
+
+	When there is no active policy after a loan boards, LP to be added on date of note/closing date.
+		LP will be added due to preferred policy expiring or cancelling 
+	
+	Insufficiency Do be added due to insufficient coverage
+	
+	When wind is excluded in Hazard and a separate wind policy is not on file
+		B&I is not included in the master policy
+		Failed to prep payment for renewal policy
+		Failed to roll or adjust policy term dates
+		Failed to remove a cancellation date or have the correct cancellation date present according to notes or document
+		Failed to uncheck wind exclusion box
+		Failed to insert a line
+		Failed to complete satisfactory OPI attempts (attempt was inadequate and No FCR)
+		Failed to validate document print date and updated cancelation in error
+	
+	Name and address, no updates made due to a perceived name and address discrepancy (not reviewing notes and validating nicknames)
+		Failed to utilize the increased coverage to avoid an insufficiency, or not updated increase coverage (Flood Only).
+		Failed to uncheck the ‘no replacement coverage’ box when policy is confirmed to have replacement cost
+		Failed to update units for condo hazard, flood and wind
+		Failed to update insurable value or required flood coverage (client’s specific)
+		LP added due to Cancellation on file, need reinstatement, new policy or rewrite to cancel LP. Document received with a print date after the cancelation effective date showing a policy 			is active
+		LP added due to expiration of policy period, Renewal doc or new policy required to cancel the LP
+		LP added for Insufficiency, doc received showing increased coverage or if escrow renewal invoice for flood received with option for higher coverage
+	
+	When a preferred policy is received with an effective date of LP
+		Escrow: Once the payment issues
+		Non escrow: Dates need to be rolled
+		When receive private flood doc & do not have full policy jacket then Do not adjust LP and it Do remain same, when receive full policy jacket or checklist with renewal team dates then LP 			Do automatically adjust (client’s specific requirement – Fannie Mae and/or Freddie Mac)
+	
+	Check the check box metioned in bottom as " Relate line to document XXXXXXXX " 
+	
+	Click on Save Insurance line
+			
+			
+			
+			
+			
+			

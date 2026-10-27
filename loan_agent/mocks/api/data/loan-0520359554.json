@@ -1,0 +1,279 @@
+{
+  "loan_number": "0520359554",
+  "primary_borrower": "WILLIAM T WEXFORD",
+  "co_borrower": "DIANA WEXFORD",
+
+  "loan_type": "Conventional",
+  "govt_loan_type": "Fannie Mae",
+  "escrow_status": "Y",
+  "loan_origination_method": "Unknown",
+  "original_balance": 319999.00,
+  "upb": 275511.05,
+  "committment_amount": 0.0,
+
+  "closing_date": "09/13/2019",
+  "created_date": "10/09/2023",
+  "date_of_note": "10/01/2023",
+  "loan_originated": "10/01/2023",
+  "loan_reported_to_app": "10/09/2023",
+  "maturity_date": "10/01/2049",
+
+  "branch": "PQ",
+  "investor_code": "Summit Residential Mortgage-SRMNP1",
+  "organization": "$CCMS - ClientCo Mortgage Servicing",
+  "officer_code": "005",
+  "client_system": "Servicing Platform",
+  "asset_manager": "Brightfield",
+  "contacts": [
+    {
+      "type": "Primary Borrower",
+      "name": "WILLIAM T WEXFORD",
+      "address": "305 AVENUE F, BAYONNE, NJ 07002",
+      "phone": "(201) 555-0177",
+      "email": ""
+    },
+    {
+      "type": "Co-Borrower",
+      "name": "DIANA WEXFORD",
+      "address": "305 AVENUE F, BAYONNE, NJ 07002",
+      "phone": "(201) 555-0177",
+      "email": ""
+    }
+  ],
+  "comments": [
+    {
+      "datetime": "06/28/2024 2:47 PM",
+      "type": "",
+      "text": "Insurance paymnet for line id 40524685 mailed to confirmed carrier remit to address PO Box 55001 Dallas TX 75266"
+    },
+    {
+      "datetime": "06/28/2024 1:30 PM",
+	    "type": "",
+      "text": "Home Owner MARA ELLISON callback# calling into verify we have current insurance inof toget escrow analsysis done."
+    }
+  ],
+  "mortgagee": [
+    {
+    "name": "",
+    "address_1": "",
+    "address_2": "",
+    "city": "",
+    "zip": "",
+    "other_names": []
+    }
+  ],
+  "collateral": [
+    {
+      "property_id": "21433117",
+      "property_line_type": "",
+      "property_info": "305 AVENUE F",
+      "property_description": "Primary",
+      "property_type": "TownHouse",
+      "property_usage": "Residential",
+      "occupancy_status": "Occupied",
+      "property_status": "Active",
+      "number_of_property": "1 of 1",
+      "property_address_1": "305 AVENUE F",
+      "city": "BAYONNE",
+      "state": "NJ",
+      "zip": "07002",
+      "property_address": "305 AVENUE F, BAYONNE, NJ 07002",
+      "appraised_value": 399999.00,
+      "lien_position": "1st",
+      "flood_zone": "X",
+      "flood_waiver": "N",
+      "flood_required": "N",
+      "loma_on_file": "N",
+      "flood_determination_date": "08/16/2006",
+      "insurable_value": 0.00,
+      "actual_cash_value": 0.00,
+      "required_hazard_coverage": 0.00,
+      "required_flood_coverage": 0.0,
+      "required_earthquake_coverage": 0.0,
+      "grandfathered": false,
+      "chk_track_only": false,
+      "insurance_lines": [
+        {
+          "line_id": "85160742",
+          "line_type": "HAZARD",
+          "policy_number": "KAUY290374",
+          "policy_type": "HAZARD",
+          "linked_property_id": "21433117",
+          "is_lender_placed": false,
+
+          "carrier_name": "Cedar Mutual Guard Insurance Companies",
+          "carrier_address": "PO Box 44000, Dayton, OH 45401-4400 USA",
+          "carrier_phone": "(800) 555 0142",
+          "carrier_global_payee_regular_mail_address": "CEDAR MUTUAL GUARD, PO BOX 44000, DAYTON, OH 45401-4400",
+          "carrier_global_payee_overnight_mail_address": "Cedar Mutual GUARD, 12-R W Fairview St, Brookfield, OH 44403",
+
+          "payee_name": "",
+          "remit_to_name": "",
+          "remit_to_name_2": "",
+          "remit_to_address": "",
+
+          "agent_name": "SAMPLE ASSOCIATES AGENCY",
+          "agent_name_2": "",
+          "agent_address_1": "100 SAMPLE AVENUE",
+          "agent_address_2": "",
+          "agent_address": "",
+          "agent_city": "UNION",
+          "agent_state": "NJ",
+          "agent_zip": "07099",
+          "agent_country": "USA",
+          "agent_email": "",
+          "agent_phone": "(908) 555 0155",
+          "agent_fax": "",
+
+          "effective_date": "09/13/2025",
+          "expiration_date": "09/13/2026",
+          "premium_due_date": "09/13/2025",
+          "policy_term": "12 months",
+
+          "escrow_status": "Y",
+          "earliest_cancellation_date": "09/13/2026",
+          "earliest_cancellation_or_reinstatement_reason": "Cancel - NonRenewal",
+          "cancel_or_reinstate_date": "09/13/2026",
+          "cancel_or_reinstate_reason": "Cancel - NonRenewal",
+
+          "cert_flood_zone": "X",
+          "no_replacement_coverage": false,
+
+          "last_payment_date": "08/25/2025",
+          "last_premium_amount": 2446.32,
+          "last_payee": "Cedar-11-CEDAR MUTUAL GUARD PO BOX 44000, DAYTON, OH 45401-4400",
+          "last_cheque_info": "3139695",
+
+          "premium_amount": 9999.99,
+          "coverage_amount": 445677.00,
+          "deductible_amount": 0.0,
+          "deductible_percentage": 0.00,
+          "additional_amount_due": 99999.99,
+
+          "wind_excluded": false,
+          "wind_deductible_amount": 1000.00,
+          "wind_deductible_percentage": 0.00,
+          "earthquake_excluded": false,
+          "earthquake_deductible": 0.0,
+          "earthquake_deductible_percentage": 0.0,
+
+          "chk_pay_agent": true,
+          "chk_mail_payment_to_agent": true,
+          "chk_make_payment": true,
+          "chk_expedite_payment": false,
+          "chk_additional_amount_due": false,
+          "chk_expedite_additional_amount_due": false,
+          "chk_funding_only": false,
+          "funding_only_comment": "",
+          "chk_issue_manual_check_for_additional_due": "",
+          "note_comments": [
+            {
+              "datetime": "06/28/2024 2:47 PM",
+              "type": "",
+              "text": "Insurance paymnet for line id 40524685 mailed to confirmed carrier remit to address PO Box 55001 Dallas TX 75266"
+            }
+          ],
+          "warnings": [
+              "The document represents a renewal paymnet, but the document expiration date is 9/13/2026 is not greater than the document's policyt Effective date 9/13/2026",
+              "The document appears to be a renewal payment, but the document does not contain a Remit To",
+              "The document cannot suggest a carrier, please review the selected carrier"
+            ]
+        },
+        {
+          "line_id": "16052182",
+          "line_type": "WIND",
+          "policy_number": "KAUY290374",
+          "policy_type": "WIND",
+          "linked_property_id": "21433117",
+          "is_lender_placed": false,
+
+          "carrier_name": "Cedar Mutual Guard Insurance Companies",
+          "carrier_address": "PO Box 44000, Dayton, OH 45401-4400 USA",
+          "carrier_phone": "(800) 555 0142",
+          "carrier_global_payee_regular_mail_address": "CEDAR MUTUAL GUARD, PO BOX 44000, DAYTON, OH 45401-4400",
+          "carrier_global_payee_overnight_mail_address": "Cedar Mutual GUARD, 12-R W Fairview St, Brookfield, OH 44403",
+
+          "payee_name": "",
+          "remit_to_name": "",
+          "remit_to_name_2": "",
+          "remit_to_address": "",
+
+          "agent_name": "SAMPLE ASSOCIATES AGENCY",
+          "agent_name_2": "",
+          "agent_address_1": "100 SAMPLE AVENUE",
+          "agent_address_2": "",
+          "agent_address": "",
+          "agent_city": "UNION",
+          "agent_state": "NJ",
+          "agent_zip": "07099",
+          "agent_country": "USA",
+          "agent_email": "",
+          "agent_phone": "(908) 555 0155",
+          "agent_fax": "",
+
+          "effective_date": "09/13/2025",
+          "expiration_date": "09/13/2026",
+          "premium_due_date": "09/13/2025",
+          "date_of_change": "",
+          "policy_term": "12 months",
+
+          "escrow_status": "Y",
+          "earliest_cancellation_date": "09/13/2026",
+          "earliest_cancellation_or_reinstatement_reason": "Cancel - NonRenewal",
+          "cancel_or_reinstate_date": "09/13/2026",
+          "cancel_or_reinstate_reason": "Cancel - NonRenewal",
+
+          "cert_flood_zone": "X",
+          "no_replacement_coverage": false,
+
+          "last_payment_date": "08/25/2025",
+          "last_premium_amount": 2446.32,
+          "last_payee": "Cedar-11-CEDAR MUTUAL GUARD PO BOX 44000, DAYTON, OH 45401-4400",
+          "last_cheque_info": "3139695",
+
+          "total_premium_amount": 9999.99,
+          "coverage_amount": 445677.00,
+          "deductible_amount": 0.0,
+          "deductible_percentage": 0.00,
+          "additional_amount_due": 99999.99,
+
+          "wind_excluded": false,
+          "wind_deductible_amount": 1000.00,
+          "wind_deductible_percentage": 0.00,
+          "earthquake_excluded": false,
+          "earthquake_deductible": 0.0,
+          "earthquake_deductible_percentage": 0.0,
+
+          "chk_pay_agent": true,
+          "chk_mail_payment_to_agent": true,
+          "chk_make_payment": true,
+          "chk_expedite_payment": false,
+          "chk_additional_amount_due": false,
+          "chk_expedite_additional_amount_due": false,
+          "chk_funding_only": false,
+          "funding_only_comment": "",
+          "chk_issue_manual_check_for_additional_due": "",
+          "note_comments": [
+            {
+              "datetime": "06/28/2024 2:47 PM",
+              "type": "",
+              "text": "Insurance paymnet for line id 40524685 mailed to confirmed carrier remit to address PO Box 55001 Dallas TX 75266"
+            }
+          ],
+          "warnings": [
+              "The document represents a renewal paymnet, but the document expiration date is 9/13/2026 is not greater than the document's policyt Effective date 9/13/2026",
+              "The document appears to be a renewal payment, but the document does not contain a Remit To",
+              "The document cannot suggest a carrier, please review the selected carrier"
+            ]
+        }
+      ]
+    }
+  ],
+  "deficiencies": [
+    {"title": "", "flag": false, "corrected": false, "waived": false }, 
+    {"title": "", "flag": false, "corrected": false, "waived": false },
+    {"title": "", "flag": false, "corrected": false, "waived": false },
+    {"title": "", "flag": false, "corrected": false, "waived": false },
+    {"title": "", "flag": false, "corrected": false, "waived": false }
+  ]
+}

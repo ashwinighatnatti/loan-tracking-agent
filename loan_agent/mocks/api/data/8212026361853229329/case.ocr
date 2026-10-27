@@ -1,0 +1,46 @@
+Field|Value
+activitystatuscode|P
+agentaddressline1|100 E SAMPLE WAY STE 100A
+agentcity|CHANDLER
+agentcontactsignatureblock|"HARBOR POINT INSURANCE LLC | | 100 E SAMPLE WAY STE 100A | | CHANDLER | AZ | 85299"
+agentname1|HARBOR POINT INSURANCE LLC
+agentstate|AZ
+agentzipcode|85299
+balancedueamount|2138.8600
+basepolicynumber|EH63OKHUZZH
+carriername|MARIE
+created_by|4c0dd0dd-35b1-4d46-a618-11f1eb93e8f4
+created_date|10/8/2026 5:31:24 AM
+documentdetailid|700411771
+documentid|517970274
+earthquakeexcludedflag|True
+insurancecompanyaddressline1|100 SOUTH SAMPLE STREET SUITE 100
+insurancecompanycity|CHARLOTTE
+insurancecompanycontactsignatureblock|"PINE VALLEY INSURANCE COMPANY | (A STOCK INSURANCE COMPANY, NAIC 99001) | 100 SOUTH SAMPLE STREET SUITE 100 | | CHARLOTTE | NC | 28202"
+insurancecompanyname1|PINE VALLEY INSURANCE COMPANY
+insurancecompanyname2|"(A STOCK INSURANCE COMPANY, NAIC 99001)"
+insurancecompanystate|NC
+insurancecompanyzipcode|28202
+insuredname1|NINA MARIE BRANDT COLE
+insuredname2|PETER ALAN FROST BRANDT
+mortgagee1addressline1|PO Box 1000
+mortgagee1city|PO Box 1000
+mortgagee1loannumber|8147474474
+mortgagee1name1|NORTHSTAR HOME
+mortgagee1name2|"MORTGAGE C O CLIENTCO MORTGAGE SERVICING ISAOA ATIMA"
+mortgagee1state|MI
+mortgagee1zipcode|730278798
+noticetypecode|RNW
+originalloannumber|8147474474
+paymentduedate|10/30/2026 12:00:00 AM
+pfi_client_id|41207
+policyeffectivedate|10/5/2026 12:00:00 AM
+policyexpirationdate|10/5/2027 12:00:00 AM
+policyinsuranceformtype|HAZ
+policynumbers|EH63OKHUZZH
+propertyaddressline1|3321 WEST SAGEBRUSH DRIVE
+propertyaddresssignatureblock|"3321 WEST SAGEBRUSH DRIVE | | PHOENIX | AZ | 85021"
+propertycity|PHOENIX
+propertystate|AZ
+propertyzipcode|85021
+windexcludedflag|False

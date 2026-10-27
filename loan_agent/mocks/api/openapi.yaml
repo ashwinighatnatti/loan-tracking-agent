@@ -1,0 +1,546 @@
+openapi: 3.0.3
+info:
+  title: Loan Tracking Mock API
+  version: 2.0.0
+  description: >
+    Mock server that serves files from disk in response to HTTP GET requests.
+    Per-document resources are read from `<data-dir>/<document-number>/`;
+    loans (`loan-<loan-number>.json`) and the shared lists (properties,
+    carriers, agents, payees) are read directly from `<data-dir>`.
+    JSON files are returned verbatim and pipe-delimited
+    CSV files as arrays of row objects, so the schemas below describe the
+    current mock data but allow additional properties.
+
+servers:
+  - url: http://localhost:9191
+
+tags:
+  - name: Search
+  - name: Documents
+  - name: Lists
+
+paths:
+  /search:
+    get:
+      tags: [Search]
+      summary: List cases for document-search.html
+      description: >
+        Returns every row of `<data-dir>/doc-search-results.csv` as a JSON object
+        keyed by the CSV header. Optionally, any query parameter named after a
+        CSV column filters rows by case-insensitive exact match
+        (e.g. `?status=To Be Processed`). Unknown parameters are ignored.
+      operationId: searchDocuments
+      parameters:
+        - { name: status,          in: query, schema: { type: string }, example: To Be Processed }
+        - { name: client,          in: query, schema: { type: string } }
+        - { name: doc_type,        in: query, schema: { type: string }, example: Renewal }
+        - { name: document_number, in: query, schema: { type: string } }
+        - { name: loan_number,     in: query, schema: { type: string } }
+        - { name: page,            in: query, schema: { type: string }, example: '1' }
+      responses:
+        '200':
+          description: Matching cases (empty array if none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SearchResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /loan/{loan-number}:
+    get:
+      tags: [Documents]
+      summary: Loan details
+      description: Returns `<data-dir>/loan-<loan-number>.json`.
+      operationId: getLoan
+      parameters: [ { $ref: '#/components/parameters/LoanNumber' } ]
+      responses:
+        '200':
+          description: Loan details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Loan' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InvalidFile' }
+
+  /properties:
+    get:
+      tags: [Lists]
+      summary: Properties for loan-search.html
+      description: >
+        Returns `<data-dir>/properties.csv` (pipe-delimited) as a JSON array
+        of row objects; rows whose first field is empty are skipped. Any query
+        parameter named after a CSV column filters rows by case-insensitive
+        exact match (e.g. `?loan_number=97894`). Unknown parameters are ignored.
+      operationId: getProperties
+      parameters:
+        - { name: loan_number, in: query, schema: { type: string }, example: '97894' }
+      responses:
+        '200':
+          description: List of properties (empty array if none match)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Property' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InvalidFile' }
+
+  /carriers:
+    get:
+      tags: [Lists]
+      summary: Carriers
+      description: >
+        Returns `<data-dir>/carriers.csv` (pipe-delimited) as a JSON array of
+        row objects; rows whose first field is empty are skipped. Any query
+        parameter named after a CSV column filters rows by case-insensitive
+        exact match. Unknown parameters are ignored.
+      operationId: getCarriers
+      responses:
+        '200':
+          description: List of carriers (empty array if none match)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Carrier' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InvalidFile' }
+
+  /agent:
+    get:
+      tags: [Lists]
+      summary: Agents
+      description: >
+        Returns `<data-dir>/agents.csv` (pipe-delimited) as a JSON array of
+        row objects; rows whose first field is empty are skipped. Any query
+        parameter named after a CSV column filters rows by case-insensitive
+        exact match. Unknown parameters are ignored.
+      operationId: getAgents
+      responses:
+        '200':
+          description: List of agents (empty array if none match)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Agent' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InvalidFile' }
+
+  /payee:
+    get:
+      tags: [Lists]
+      summary: Payees
+      description: >
+        Returns `<data-dir>/payees.csv` (pipe-delimited) as a JSON array of
+        row objects; rows whose first field is empty are skipped. Any query
+        parameter named after a CSV column filters rows by case-insensitive
+        exact match. Unknown parameters are ignored.
+      operationId: getPayees
+      responses:
+        '200':
+          description: List of payees (empty array if none match)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Payee' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InvalidFile' }
+
+  /pdf/{document-number}:
+    get:
+      tags: [Documents]
+      summary: Case document PDF
+      description: Returns `<data-dir>/<document-number>/case.pdf`.
+      operationId: getPdf
+      parameters: [ { $ref: '#/components/parameters/DocumentNumber' } ]
+      responses:
+        '200':
+          description: The case document
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /ocr/{document-number}:
+    get:
+      tags: [Documents]
+      summary: OCR text of the case document
+      description: >-
+        Parses the pipe-delimited key|value file `<data-dir>/<document-number>/case.ocr`
+        into a JSON object. Keys are renamed to snake_case via the OCR_KEYS lookup;
+        unknown keys are kept as-is.
+      operationId: getOcr
+      parameters: [ { $ref: '#/components/parameters/DocumentNumber' } ]
+      responses:
+        '200':
+          description: OCR fields extracted from case.pdf
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: string }
+              example:
+                activity_status_code: P
+                agent_city: CHANDLER
+                balance_due_amount: '2138.8600'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /case/{document-number}:
+    get:
+      tags: [Documents]
+      summary: Fields extracted from the case document
+      description: >
+        Returns `<data-dir>/<document-number>/case.json`, the document fields
+        extracted from `case.pdf`.
+      operationId: getCase
+      parameters: [ { $ref: '#/components/parameters/DocumentNumber' } ]
+      responses:
+        '200':
+          description: Extracted case fields
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Case' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InvalidFile' }
+
+components:
+  parameters:
+    DocumentNumber:
+      name: document-number
+      in: path
+      required: true
+      description: Name of the folder under `<data-dir>` holding the document's files.
+      schema: { type: string, pattern: '^[A-Za-z0-9_\-]+$' }
+      example: '7750646441'
+    LoanNumber:
+      name: loan-number
+      in: path
+      required: true
+      description: Loan number; the loan is read from `<data-dir>/loan-<loan-number>.json`.
+      schema: { type: string, pattern: '^[A-Za-z0-9_\-]+$' }
+      example: '97815'
+
+  schemas:
+    SearchResult:
+      type: object
+      description: One row of doc-search-results.csv. All values are strings.
+      properties:
+        page:            { type: string, example: '1' }
+        row_index:       { type: string, example: '0' }
+        client:          { type: string, example: ClientCo Mortgage Servicing - 41207 }
+        document_number: { type: string, example: '8202026950003648249' }
+        import_date:     { type: string, example: 08/20/26 }
+        doc_type:        { type: string, example: Renewal }
+        doc_source:      { type: string, example: E-mail/Fax }
+        loan_number:     { type: string, example: '0442051999' }
+        status:          { type: string, example: To Be Processed }
+        csr:             { type: string }
+        last_update:     { type: string, example: 08/24/26 }
+        comments:        { type: string, example: BOA LOAN }
+        view_url:        { type: string, format: uri }
+        work_url:        { type: string, format: uri }
+        assign_url:      { type: string, format: uri }
+        pdf_url:         { type: string, format: uri }
+      additionalProperties: { type: string }
+
+    Loan:
+      type: object
+      properties:
+        document_number:      { type: string, example: '8232026442565677356' }
+        document_url:         { type: string, format: uri }
+        view_url:             { type: string }
+        work_url:             { type: string }
+        client:               { type: string, example: ClientCo Mortgage Servicing - 41207 }
+        client_number:        { type: integer, example: 41207 }
+        document_type:        { type: string, example: Renewal }
+        document_source:      { type: string, example: Email/Fax }
+        document_status:      { type: string, example: To Be Processed }
+        document_comments:    { type: string }
+        document_last_update: { type: string, example: 08/24/26 }
+        document_print_date:  { type: string }
+        issue_date:           { type: string, example: 08/21/2026 }
+        import_date:          { type: string }
+        search_loan_number:   { type: string }
+        loan_number:          { type: string, example: '7750646441' }
+        primary_borrower:     { type: string, example: OWEN C ASHBY }
+        co_borrower:          { type: string }
+        loan_type:            { type: string, example: Conventional }
+        govt_loan_type:       { type: string }
+        escrow_status:        { type: string, example: Y }
+        loan_origination_method: { type: string }
+        original_balance:     { type: number }
+        upb:                  { type: number }
+        committment_amount:   { type: number }
+        closing_date:         { type: string }
+        created_date:         { type: string }
+        date_of_note:         { type: string }
+        loan_originated:      { type: string }
+        loan_reported_to_app: { type: string }
+        maturity_date:        { type: string }
+        branch:               { type: string }
+        investor_code:        { type: string }
+        organization:         { type: string }
+        officer_code:         { type: string }
+        client_system:        { type: string }
+        asset_manager:        { type: string }
+        contacts:
+          type: array
+          items: { $ref: '#/components/schemas/Contact' }
+        comments:
+          type: array
+          items: { $ref: '#/components/schemas/Comment' }
+        mortgagee:
+          type: array
+          items: { $ref: '#/components/schemas/Mortgagee' }
+        collateral:
+          type: array
+          items: { $ref: '#/components/schemas/Collateral' }
+        deficiencies:
+          type: array
+          items: { $ref: '#/components/schemas/Deficiency' }
+      additionalProperties: true
+
+    Contact:
+      type: object
+      properties:
+        type:    { type: string, example: Primary Borrower }
+        name:    { type: string }
+        address: { type: string }
+        phone:   { type: string }
+        email:   { type: string }
+      additionalProperties: true
+
+    Comment:
+      type: object
+      properties:
+        datetime: { type: string, example: 06/28/2024 2:47 PM }
+        type:     { type: string }
+        text:     { type: string }
+      additionalProperties: true
+
+    Mortgagee:
+      type: object
+      properties:
+        name:        { type: string }
+        address_1:   { type: string }
+        address_2:   { type: string }
+        city:        { type: string }
+        zip:         { type: string }
+        other_names: { type: array, items: { type: string } }
+      additionalProperties: true
+
+    Collateral:
+      type: object
+      description: A property securing the loan, with its insurance lines.
+      properties:
+        property_id:        { type: string }
+        property_info:      { type: string }
+        property_type:      { type: string }
+        property_usage:     { type: string }
+        occupancy_status:   { type: string }
+        property_status:    { type: string }
+        property_address_1: { type: string }
+        city:               { type: string }
+        state:              { type: string }
+        zip:                { type: string }
+        appraised_value:    { type: number }
+        lien_position:      { type: string }
+        flood_zone:         { type: string }
+        insurance_lines:
+          type: array
+          items: { $ref: '#/components/schemas/InsuranceLine' }
+      additionalProperties: true
+
+    InsuranceLine:
+      type: object
+      properties:
+        line_id:              { type: string }
+        line_type_desc:       { type: string, example: HAZARD }
+        policy_number:        { type: string }
+        policy_type:          { type: string }
+        linked_property_id:   { type: string }
+        is_lender_placed:     { type: boolean }
+        carrier_name:         { type: string }
+        carrier_address:      { type: string }
+        carrier_phone:        { type: string }
+        payee_name:           { type: string }
+        remit_to_name:        { type: string }
+        remit_to_address:     { type: string }
+        agent_name:           { type: string }
+        agent_phone:          { type: string }
+        effective_date:       { type: string }
+        expiration_date:      { type: string }
+        total_premium_amount: { type: number }
+        coverage_amount:      { type: number }
+        note_comments:
+          type: array
+          items: { $ref: '#/components/schemas/Comment' }
+        warnings:
+          type: array
+          items: { type: string }
+      additionalProperties: true
+
+    Deficiency:
+      type: object
+      properties:
+        title:     { type: string }
+        flag:      { type: boolean }
+        corrected: { type: boolean }
+        waived:    { type: boolean }
+      additionalProperties: true
+
+    Property:
+      type: object
+      description: One row of properties.csv. All values are strings.
+      properties:
+        loan_number:      { type: string, example: '97894' }
+        property_address: { type: string, example: '214 BIRCHWOOD CT, BAYONNE, NJ 07002' }
+        policy_numbers:   { type: string, description: Comma-separated policy numbers, example: 'I8UCH,MR-93933-PT,ZP1-3516488' }
+        primary_borrower: { type: string, example: OWEN C ASHBY }
+        co_borrower:      { type: string, example: HELEN ASHBY }
+        officer_code:     { type: string, example: '005' }
+        investor_code:    { type: string, example: Summit Residential Mortgage-SRMNP1 }
+        closing_date:     { type: string, example: 09/13/2019 }
+        loan_type:        { type: string, example: Conventional }
+        closing_code:     { type: string, example: C1 }
+        flood_zone:       { type: string, example: X }
+        lien_position:    { type: string, example: 1st }
+        property_usage:   { type: string, example: Residential }
+      additionalProperties: { type: string }
+
+    Carrier:
+      type: object
+      description: One row of carriers.csv. All values are strings.
+      properties:
+        carrier_id: { type: string, example: C-001 }
+        name1:      { type: string, example: Acme Insurance }
+        name2:      { type: string }
+        name3:      { type: string }
+        address1:   { type: string, example: 100 Main St }
+        address2:   { type: string, example: Suite 200 }
+        city:       { type: string, example: Austin }
+        state:      { type: string, example: TX }
+        zip:        { type: string, example: '78701' }
+        phone:      { type: string, example: 800-555-0100 }
+        naic_code:  { type: string, example: '12345' }
+        payee_name: { type: string, example: Acme Insurance Remittance }
+      additionalProperties: { type: string }
+
+    Agent:
+      type: object
+      description: One row of agents.csv. All values are strings.
+      properties:
+        agent_id: { type: string, example: A-001 }
+        name:     { type: string, example: John Smith }
+        agency:   { type: string }
+        carrier:  { type: string }
+        phone:    { type: string }
+        email:    { type: string }
+      additionalProperties: { type: string }
+
+    Payee:
+      type: object
+      description: >
+        One row of payees.csv. All values are strings.
+      properties:
+        carrier_id: { type: string, example: C-001 }
+        name:       { type: string, example: Acme Insurance }
+        naic_code:  { type: string, example: '12345' }
+        phone:      { type: string, example: 800-555-0100 }
+        state:      { type: string, example: TX }
+      additionalProperties: { type: string }
+
+    Case:
+      type: object
+      description: >
+        Document fields extracted from case.pdf. Unextracted fields are empty
+        strings (text) or 0 (amounts).
+      properties:
+        document_type:    { type: string }
+        print_date:       { type: string }
+        borrower:           { type: string }
+        co_borrower:        { type: string }
+        loan_number:        { type: string }
+        property_address:   { type: string }
+        property_address_1: { type: string }
+        property_address_2: { type: string }
+        property_city:      { type: string }
+        property_state:     { type: string }
+        property_zip:       { type: string }
+        policy_number: { type: string, example: KAUY290374 }
+        policy_type:   { type: string, example: HAZARD }
+        carrier_name:    { type: string, example: Cedar Mutual Guard Insurance Companies }
+        carrier_address: { type: string, example: 'PO Box 44000, Dayton, OH 45401-4400 USA' }
+        carrier_phone:   { type: string, example: (800) 555 0142 }
+        carrier_global_payee_regular_mail_address:   { type: string }
+        carrier_global_payee_overnight_mail_address: { type: string }
+        payee_name:       { type: string }
+        remit_to_name:    { type: string }
+        remit_to_name_2:  { type: string }
+        remit_to_address: { type: string }
+        agent_name:      { type: string, example: SAMPLE ASSOCIATES AGENCY }
+        agent_name_2:    { type: string }
+        agent_address:   { type: string }
+        agent_address_1: { type: string, example: 100 SAMPLE AVENUE }
+        agent_address_2: { type: string }
+        agent_city:      { type: string, example: UNION }
+        agent_state:     { type: string, example: NJ }
+        agent_zip:       { type: string, example: '07099' }
+        agent_country:   { type: string, example: USA }
+        agent_email:     { type: string }
+        agent_phone:     { type: string, example: (908) 555 0155 }
+        agent_fax:       { type: string }
+        effective_date:             { type: string, example: 09/13/2025 }
+        expiration_date:            { type: string, example: 09/13/2026 }
+        premium_due_date:           { type: string, example: 09/13/2025 }
+        earliest_cancellation_date: { type: string, example: 09/13/2026 }
+        cancel_or_reinstate_date:   { type: string, example: 09/13/2026 }
+        policy_term:                { type: string, example: 12 months }
+        escrow_status: { type: string, example: Y }
+        earliest_cancellation_or_reinstatement_reason: { type: string, example: Cancel - NonRenewal }
+        cancel_or_reinstate_reason:                    { type: string, example: Cancel - NonRenewal }
+        coverage_amount:       { type: number, example: 445677.00 }
+        premium_amount:        { type: number, example: 9999.99 }
+        additional_amount_due: { type: number }
+        deductible_amount:     { type: number }
+        deductible_percentage: { type: number }
+        wind_excluded:                       { type: boolean }
+        wind_deductible_amount:              { type: number, example: 1000.00 }
+        wind_deductible_percentage:          { type: number }
+        wind_hurricane_deductible_amount:     { type: number }
+        wind_hurricane_deductible_percentage: { type: number }
+        earthquake_excluded:              { type: boolean }
+        earthquake_deductible:            { type: number }
+        earthquake_deductible_percentage: { type: number }
+      additionalProperties: true
+
+    Error:
+      type: object
+      required: [error, status]
+      properties:
+        error:  { type: string }
+        status: { type: integer }
+
+  responses:
+    BadRequest:
+      description: Invalid document number
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Document folder or file not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InvalidFile:
+      description: File exists but could not be parsed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

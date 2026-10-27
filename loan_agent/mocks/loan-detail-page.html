@@ -1,0 +1,2108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Example Financial, Inc. — Loan Details</title>
+<meta name="description" content="Loan Details: loan, collateral and insurance-line data for one loan. Scrape-friendly: every region carries data-section, every value (inputs, selects, display text, suggested-value chips) carries id, data-testid and a snake_case data-field; a live snapshot of all values grouped by section is kept as JSON in #loan-detail-json and returned by window.getLoanDetail(). The Comments tab opens the loan's comment history in an iframe popup (#comments-dialog, rows carry data-comment-id and data-col); the same comments are in #loan-comments-json. Enter in an insurance line's Carrier box opens the Search for Carrier screen in an iframe popup (#carrier-search-dialog); Search lists GET /carriers matches beneath the criteria, and clicking a result cell writes that carrier's name and address back to the line. Loan Information fields are read-only (data-readonly=true). Insurance Lines has one tab per line (Hazard, Wind); each line is a div.linepanel with data-line-type, data-line-id and data-policy-number, and repeats the same data-field names, so scope lookups to the panel.">
+<!-- Styled like loan-search.html / document-search.html (shared tokens, light + dark).
+     Fluid layout: field columns and side-by-side tables wrap as the window narrows;
+     the premium table scrolls sideways on phones. -->
+<style>
+  /* Same design tokens as loan-search.html / document-search.html, plus the few this page needs. */
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #ffffff;
+    --panel: #f2f2f2;
+    --panel-2: #e9e9e9;
+    --text: #1a1a1a;
+    --muted: #4a4a4a;
+    --label-bg: #e6e6e6;
+    --rule: #d6d6d6;
+    --band: #e8f0f8;
+    --band-text: #1f4e79;
+    --link: #0b3d91;
+    --nav: #111111;
+    --nav-text: #ffffff;
+    --accent: #2f6db5;
+    --green: #6ab04c;
+    --green-2: #4e9a35;
+    --alert: #d40000;
+    --input-bg: #ffffff;
+    --input-border: #9a9a9a;
+    --row-hover: #f7fbff;
+    --row-selected: #e1eefb;
+    --header-a: #0a2a5e;
+    --header-b: #1e6a3b;
+    /* suggested-value chips: red = document disagrees with the field, orange = informational */
+    --sug-bg: #ffe1e1; --sug-text: #b00000; --sug-border: #d98a8a; --sug-hover: #ffc9c9;
+    --sug2-text: #c25e00; --sug2-border: #e0a25c; --sug2-hover: #fff0e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #17191c; --panel: #21252a; --panel-2: #2a2f35; --text: #e8e8e8; --muted: #b4b4b4;
+      --label-bg: #2c3138; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --link: #8fb8ff;
+      --nav: #0b0d10; --accent: #6ea3e6; --input-bg: #14171a; --input-border: #555c66;
+      --row-hover: #232b35; --row-selected: #2a3b52; --alert: #ff6b6b;
+      --sug-bg: #3d1f22; --sug-text: #ff9a9a; --sug-border: #8a4a4f; --sug-hover: #522a2e;
+      --sug2-text: #f5b26b; --sug2-border: #8a6232; --sug2-hover: #3a2c1c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #17191c; --panel: #21252a; --panel-2: #2a2f35; --text: #e8e8e8; --muted: #b4b4b4;
+    --label-bg: #2c3138; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --link: #8fb8ff;
+    --nav: #0b0d10; --accent: #6ea3e6; --input-bg: #14171a; --input-border: #555c66;
+    --row-hover: #232b35; --row-selected: #2a3b52; --alert: #ff6b6b;
+    --sug-bg: #3d1f22; --sug-text: #ff9a9a; --sug-border: #8a4a4f; --sug-hover: #522a2e;
+    --sug2-text: #f5b26b; --sug2-border: #8a6232; --sug2-hover: #3a2c1c;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.35 Verdana, Geneva, "DejaVu Sans", Arial, sans-serif;
+    min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+  }
+  /* Side gutter that scales with the viewport */
+  :root { --gutter: clamp(12px, 2vw, 28px); }
+  a { color: var(--link); }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: var(--text); background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 2px; padding: 3px 5px; max-width: 100%; }
+  input[type=checkbox], input[type=radio] { padding: 0; accent-color: var(--accent); }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Header */
+  .brand-bar {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px;
+    padding: 10px var(--gutter); color: #fff;
+    background: linear-gradient(100deg, var(--header-a) 0 38%, var(--header-b) 62%, #2d8a4d 100%);
+  }
+  .brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+  .brand-name { font-size: clamp(18px, 2.4vw, 26px); font-weight: 700; letter-spacing: 0.06em; }
+  .brand-sub { font-size: 11px; letter-spacing: 0.22em; }
+  .welcome { display: flex; align-items: center; gap: 12px; font-size: 12px; line-height: 1.3; }
+  .client-badge { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.7); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  nav.topnav { background: var(--nav); color: var(--nav-text); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 14px; padding: 5px var(--gutter); font-size: 12px; }
+  nav.topnav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  nav.topnav .navlink { background: none; border: 0; padding: 0; color: var(--nav-text); text-decoration: none; }
+  nav.topnav .navlink:hover { text-decoration: underline; }
+  nav.topnav .right li + li::before { content: "|"; margin-right: 14px; opacity: .6; }
+
+  /* Page */
+  .page { flex: 1 1 auto; width: 100%; padding: 10px var(--gutter) 0; display: flex; flex-direction: column; min-height: 0; }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 4px 20px; }
+  h1 { margin: 0 0 10px; font-size: 22px; font-weight: 400; color: var(--band-text); }
+
+  /* Tabs */
+  .tabstrip { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 2px solid var(--accent); }
+  .tab { background: var(--band); color: var(--band-text); border: 0; border-radius: 3px 3px 0 0; padding: 6px 14px; }
+  .tab:hover { background: var(--row-selected); }
+  .tab.active, .tab[aria-selected="true"] { background: var(--accent); color: #fff; font-weight: 700; }
+
+  /* Loan bar (who / what / where for this loan) */
+  .loanbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; background: var(--panel); padding: 8px; margin-bottom: 14px; }
+  .loanbar label { color: var(--muted); }
+  .loanbar .col { line-height: 1.3; }
+  .loanbar [data-field="loan_number_display"], .loanbar [data-field^="loan_borrower_header"] { font-weight: 700; }
+  .loanbar .load-status { margin-left: auto; color: var(--muted); }
+  .loanbar .load-status[data-state="error"] { color: #b3261e; font-weight: 700; }
+  .w-loan { width: min(100%, 14ch); }
+
+  /* Sections: collapsible cards with a band header */
+  section.section { margin-bottom: 14px; }
+  .shead {
+    width: 100%; display: flex; align-items: center; text-align: left; border: 0;
+    background: var(--band); color: var(--band-text); padding: 5px 8px; font-size: 14px;
+  }
+  .shead .caret::before { content: "▾"; margin-right: 6px; font-size: 12px; display: inline-block; }
+  .shead[aria-expanded="false"] .caret::before { content: "▸"; }
+  .ro-tag { margin-left: 10px; font-size: 11px; color: var(--muted); border: 1px solid var(--rule); border-radius: 8px; padding: 0 6px; }
+
+  /* Read-only sections: fields keep their elements (and values) but read as plain text */
+  .section[data-readonly="true"] .fval input, .section[data-readonly="true"] .fval select {
+    background: transparent; border-color: transparent; color: var(--text); opacity: 1; padding-left: 0;
+    appearance: none; -webkit-appearance: none; cursor: default;
+  }
+  .section[data-readonly="true"] .fval input::-webkit-calendar-picker-indicator { display: none; }
+  .sbody { padding: 8px 4px 4px; }
+  h3.sub { margin: 14px 4px 4px; font-size: 13px; }
+  .subpanel { background: var(--panel); padding: 8px; }
+
+  .toolrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 4px 8px; }
+  .toolrow .gap-l { margin-left: 12px; }
+  .toolrow select.fill { flex: 0 1 240px; }
+  .toolrow select.fill-sm { flex: 0 1 160px; }
+
+  /* Buttons (same as the other pages) */
+  .btn { background: linear-gradient(var(--green), var(--green-2)); color: #fff; border: 1px solid var(--green-2); border-radius: 14px; padding: 4px 12px; font-weight: 700; text-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  .btn.quiet { background: var(--panel); color: var(--text); border-color: var(--input-border); text-shadow: none; font-weight: 400; }
+  .btn.quiet:hover { background: var(--row-selected); }
+  .linkbtn { background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; }
+
+  /* Field grid: label/value rows in two columns that stack when the section gets narrow */
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 0 16px; align-items: start; container-type: inline-size; padding: 0 4px; }
+  .cols > * { min-width: 0; }
+  .frow { display: flex; align-items: stretch; min-height: 28px; }
+  .flabel { flex: 0 0 clamp(120px, 38%, 210px); background: var(--label-bg); color: var(--muted); display: flex; align-items: center; justify-content: flex-end; text-align: right; padding: 3px 6px; border-bottom: 1px solid var(--bg); }
+  .fval { flex: 1; min-width: 0; padding: 2px 6px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .actions-center { text-align: center; margin-top: 10px; }
+
+  .w-full, .fill { width: 100%; min-width: 0; }
+  .fill-sm { max-width: 160px; }
+  .w-med { width: min(100%, 18ch); } .w-sm { width: min(100%, 10ch); } .w-xs { width: min(100%, 7ch); }
+  textarea.fill { resize: vertical; }
+  #carrier-address { margin-top: 3px; }
+
+  /* Suggested-value chips are buttons: click to apply the document's value to the paired field */
+  .sug, .sug-orange { border-radius: 2px; padding: 0 4px; font-size: 12px; text-align: left; overflow-wrap: break-word; }
+  .sug { background: var(--sug-bg); color: var(--sug-text); border: 1px dashed var(--sug-border); }
+  .sug:hover { background: var(--sug-hover); }
+  .sug-orange { background: none; color: var(--sug2-text); border: 1px dashed var(--sug2-border); }
+  .sug-orange:hover { background: var(--sug2-hover); }
+
+  /* Insurance line */
+  /* Insurance line tabs: the active line is green, others are band-coloured */
+  .linetabs { display: flex; flex-wrap: wrap; gap: 2px; min-height: 44px; margin-bottom: 8px; }
+  .linetab { display: flex; flex-direction: column; align-items: flex-start; min-width: 120px; padding: 5px 10px; border: 0; border-radius: 3px 3px 0 0;
+    background: var(--band); color: var(--band-text); font-size: 12px; line-height: 1.3; text-align: left; }
+  .linetab:hover { background: var(--row-selected); }
+  .linetab.active, .linetab[aria-selected="true"] { background: linear-gradient(var(--green), var(--green-2)); color: #fff; font-weight: 700; }
+  .linebar { flex: 1 1 40px; background: var(--band); }
+  .warnbox { margin: 4px 4px 10px; padding: 6px 10px; border-left: 3px solid var(--alert); background: var(--panel); }
+  .warnbox h4 { color: var(--alert); margin: 0 0 4px; font-size: 13px; }
+  .warnbox ul { margin: 0; padding-left: 18px; color: var(--alert); }
+  .warnbox li { margin-bottom: 3px; }
+
+  /* Label/value tables inside the insurance line */
+  table.grid { border-collapse: collapse; width: 100%; }
+  table.grid td { padding: 3px 6px; vertical-align: middle; border-bottom: 1px solid var(--rule); }
+  table.grid td.lbl { background: var(--label-bg); color: var(--muted); text-align: right; width: clamp(100px, 34%, 210px); border-bottom: 1px solid var(--panel); }
+  table.grid td.note { width: 90px; vertical-align: top; color: var(--muted); font-size: 12px; }
+  /* side-by-side tables share the row and wrap under each other when space runs out */
+  .carrierwrap, .flexrow { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-start; }
+  .carrierwrap > table.grid, .flexrow > table.grid { flex: 1 1 360px; width: auto; }
+  .comment-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+  .comment-row textarea { flex: 1 1 260px; height: 64px; }
+  .radio-gap { margin-left: 10px; }
+
+  /* Premium + Deficiencies */
+  .premium-row { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-start; }
+  .premium-col { flex: 1 1 600px; min-width: min(100%, 600px); }
+  .payment-summary { color: var(--alert); margin: 0 4px 8px; overflow-wrap: anywhere; }
+  .payment-summary .k { color: var(--muted); }
+  .scroll-x { overflow-x: auto; }
+  table.premium { min-width: 600px; }
+  table.premium td.lbl { width: 130px; }
+  table.premium tr.colhead td { font-size: 12px; color: var(--muted); border-bottom: 0; }
+  .after-table { margin: 10px 4px 0; }
+  .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+  .defwrap { flex: 0 1 320px; min-width: 240px; }
+  .defwrap h3.sub { margin-top: 14px; }
+  .defwrap .btn { margin: 0 0 6px 4px; }
+  table.def { border-collapse: collapse; width: 100%; }
+  table.def th { background: var(--band); color: var(--band-text); text-align: left; padding: 4px 6px; font-weight: 400; }
+  table.def td { border-bottom: 1px solid var(--rule); padding: 4px 6px; vertical-align: top; }
+  table.def td.title { background: var(--label-bg); color: var(--muted); width: 55%; border-bottom-color: var(--bg); }
+  .radioline { display: block; margin: 2px 0; }
+
+  /* Footer */
+  footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 11px; margin-top: 12px; padding: 8px 0; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--rule); color: var(--muted); }
+  footer .linkbtn { font-size: inherit; }
+
+  /* Comments popup (the comment list lives in an iframe), same pattern as loan-search.html's To-Do edit */
+  dialog.modal { padding: 0; border: 1px solid var(--rule); background: var(--bg); color: var(--text); width: min(1000px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
+  dialog.modal::backdrop { background: rgba(0,0,0,.45); }
+  dialog.modal iframe { display: block; width: 100%; height: 420px; max-height: calc(100dvh - 110px); border: 0; }
+  .btn-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .modal-actions { margin: 0; padding: 8px 12px; justify-content: flex-end; background: var(--panel); border-top: 1px solid var(--rule); }
+  /* Carrier search popup: the search screen (with its own buttons) fills the whole dialog */
+  dialog.modal iframe#carrier-search-frame { height: 520px; max-height: calc(100dvh - 40px); }
+
+  @media (max-width: 640px) {
+    .toolrow .gap-l { margin-left: 0; }
+  }
+</style>
+</head>
+<body data-app="loan-detail">
+
+<!-- ================= HEADER ================= -->
+<header class="brand-bar" id="site-header" data-testid="masthead" data-section="masthead">
+  <div class="brand">
+    <span class="brand-name">EXAMPLECO</span>
+    <span class="brand-sub">FINANCIAL, INC.</span>
+  </div>
+  <div class="welcome" id="welcome" data-testid="welcome-block" data-section="welcome">
+    <span class="client-badge" aria-hidden="true">SM</span>
+    <div>
+      <div>Welcome</div>
+      <div id="client-name" data-testid="welcome-client-name" data-field="welcome_client_name">ClientCo Mortgage Servicing</div>
+      <div data-testid="welcome-client-number" data-field="welcome_client_number">Client # 41207</div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= NAV ================= -->
+<nav class="topnav" id="top-nav" aria-label="Primary" data-testid="main-nav" data-section="main-nav">
+  <ul class="left">
+    <li><button type="button" class="navlink" id="nav-loan-search"     data-testid="nav-loan-search"     data-field-type="button">Loan Search</button></li>
+    <li><button type="button" class="navlink" id="nav-policy-depot"    data-testid="nav-policy-depot"    data-field-type="button">Policy Depot</button></li>
+    <li><button type="button" class="navlink" id="nav-document-search" data-testid="nav-document-search" data-field-type="button">Document Search</button></li>
+    <li><button type="button" class="navlink" id="nav-workspace"       data-testid="nav-workspace"       data-field-type="button">Workspace</button></li>
+  </ul>
+  <ul class="right">
+    <li><button type="button" class="navlink" id="nav-logout"    data-testid="nav-logout"    data-field-type="button">Logout</button></li>
+    <li><button type="button" class="navlink" id="nav-help"      data-testid="nav-help"      data-field-type="button">Help</button></li>
+    <li><button type="button" class="navlink" id="nav-home"      data-testid="nav-home"      data-field-type="button">Home</button></li>
+    <li><button type="button" class="navlink" id="nav-examplelp" data-testid="nav-examplelp" data-field-type="button">examplelp.com</button></li>
+  </ul>
+</nav>
+
+<main class="page" id="page-loan-detail" data-testid="page-loan-detail">
+  <div class="page-head">
+    <h1 data-testid="page-title">Loan Details</h1>
+  </div>
+
+  <!-- ================= TABS ================= -->
+  <div class="tabstrip" role="tablist" data-testid="tab-strip" data-section="tab-strip">
+    <button type="button" class="tab active" role="tab" aria-selected="true"  id="tab-loan-details"         data-testid="tab-loan-details"         data-field-type="button">Loan Details</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tab-transaction-history"  data-testid="tab-transaction-history"  data-field-type="button">Transaction History</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tab-insurance-documents"  data-testid="tab-insurance-documents"  data-field-type="button">Insurance Documents</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tab-correspondence"       data-testid="tab-correspondence"       data-field-type="button">Correspondence</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tab-calls"                data-testid="tab-calls"                data-field-type="button">Calls</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tab-lender-placed-claims" data-testid="tab-lender-placed-claims" data-field-type="button">Lender Placed Claims</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tab-comments"             data-testid="tab-comments"             data-field-type="button">Comments</button>
+  </div>
+
+  <!-- ================= LOAN BAR ================= -->
+  <div class="loanbar" data-testid="loan-bar" data-section="loan-bar">
+    <label for="loan-number-input">Loan #</label>
+    <input class="w-loan" type="text" id="loan-number-input" name="loanNumber" data-field="loan_number" data-testid="loan-number-input"
+           data-field-type="text" aria-label="Loan #" value="7750646441">
+    <button type="button" class="btn quiet" id="loan-number-go" data-testid="loan-number-go"
+            data-field-type="button">Go</button>
+    <div class="col">
+      <div data-testid="loan-number-display" data-field="loan_number_display">7750646441</div>
+      <div data-testid="loan-number-alt" data-field="loan_number_alt">(7750646441)</div>
+    </div>
+    <div class="col">
+      <div data-testid="loan-borrower-header" data-field="loan_borrower_header">LEWIS C</div><div data-testid="loan-borrower-header-line2" data-field="loan_borrower_header_line2">ASHBY</div>
+    </div>
+    <div class="col">
+      <div data-testid="loan-property-header-line1" data-field="loan_property_header_line1">21 BIRCHWOOD CT</div>
+      <div data-testid="loan-property-header-line2" data-field="loan_property_header_line2">BAYONNE, NJ 07002</div>
+    </div>
+    <span class="load-status" id="loan-load-status" data-testid="loan-load-status" role="status" aria-live="polite" data-state="idle"></span>
+  </div>
+
+  <!-- ================= LOAN INFORMATION ================= -->
+  <section class="section" data-state="expanded" id="section-loan-information" data-testid="section-loan-information" data-section="loan-information" data-readonly="true">
+    <button type="button" class="shead" data-testid="section-loan-information-header" data-field-type="button" aria-expanded="true"><span class="caret" aria-hidden="true"></span>Loan Information<span class="ro-tag">Read only</span></button>
+    <div class="sbody">
+      <div class="toolrow">
+        <button type="button" class="linkbtn" id="btn-show-hide-empty-fields" data-testid="btn-show-hide-empty-fields" data-field-type="button">Show/Hide Empty Fields</button>
+        <button type="button" class="linkbtn gap-l" id="btn-full-loan-detail" data-testid="btn-full-loan-detail" data-field-type="button">Full Loan Detail</button>
+        <button type="button" class="btn quiet gap-l" id="btn-contact-summary" data-testid="btn-contact-summary" data-field-type="button">Contact Summary</button>
+        <button type="button" class="btn quiet" id="btn-mcc"    data-testid="btn-mcc"    data-field-type="button">MCC</button>
+        <button type="button" class="btn quiet" id="btn-condos" data-testid="btn-condos" data-field-type="button">Condos</button>
+        <button type="button" class="btn quiet" id="btn-audit"  data-testid="btn-audit"  data-field-type="button">Audit</button>
+      </div>
+      <div class="toolrow">
+        <button type="button" class="btn quiet" id="btn-call-center"   data-testid="btn-call-center"   data-field-type="button">Call Center</button>
+        <button type="button" class="btn quiet" id="btn-verify-call"   data-testid="btn-verify-call"   data-field-type="button">Verify Call</button>
+        <button type="button" class="btn quiet" id="btn-comments"      data-testid="btn-comments"      data-field-type="button">!Comments</button>
+        <button type="button" class="btn quiet" id="btn-upload-notice" data-testid="btn-upload-notice" data-field-type="button">Upload Notice</button>
+      </div>
+
+      <div class="cols">
+        <div class="col-left">
+          <div class="frow"><div class="flabel"><label for="primary-borrower">Primary Borrower</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-full" id="primary-borrower" name="primaryBorrower" data-field="primary_borrower" data-testid="primary-borrower" data-field-type="text" aria-label="Primary Borrower" value="OWEN C ASHBY"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="co-borrower">Co-Borrower</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-full" id="co-borrower" name="coBorrower" data-field="co_borrower" data-testid="co-borrower" data-field-type="text" aria-label="Co-Borrower" value="HELEN ASHBY"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="maturity-date">Maturity Date</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="date" id="maturity-date" name="maturityDate" data-field="maturity_date" data-testid="maturity-date" data-field-type="date" aria-label="Maturity Date" value="2049-10-01"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="closing-date">Closing Date</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="date" id="closing-date" name="closingDate" data-field="closing_date" data-testid="closing-date" data-field-type="date" aria-label="Closing Date" value="2019-09-13"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="created-date">Created Date</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="date" id="created-date" name="createdDate" data-field="created_date" data-testid="created-date" data-field-type="date" aria-label="Created Date" value="2023-10-09"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="date-of-note">Date of Note</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="date" id="date-of-note" name="dateOfNote" data-field="date_of_note" data-testid="date-of-note" data-field-type="date" aria-label="Date of Note" value="2023-10-01"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="loan-origination-method">Loan Origination Method</label></div>
+            <div class="fval"><select disabled aria-readonly="true" class="w-full" id="loan-origination-method" name="loanOriginationMethod" data-field="loan_origination_method" data-testid="loan-origination-method" data-field-type="select" aria-label="Loan Origination Method">
+              <option selected>Unknown</option><option>Retail</option><option>Wholesale</option><option>Correspondent</option><option>Broker</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="original-balance">Original Balance</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-full" id="original-balance" name="originalBalance" data-field="original_balance" data-testid="original-balance" data-field-type="text" aria-label="Original Balance" value="$319,999.00"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="upb">UPB</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-full" id="upb" name="upb" data-field="upb" data-testid="upb" data-field-type="text" aria-label="UPB" value="$275,511.05"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="commitment-amount">Commitment Amount</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-full" id="commitment-amount" name="commitmentAmount" data-field="commitment_amount" data-testid="commitment-amount" data-field-type="text" aria-label="Commitment Amount" value="$0.00"></div></div>
+        </div>
+
+        <div class="col-right">
+          <div class="frow"><div class="flabel"><label for="branch-number">Branch #</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-sm" id="branch-number" name="branchNumber" data-field="branch_number" data-testid="branch-number" data-field-type="text" aria-label="Branch #" value="PQ"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="investor-code">Investor Code</label></div>
+            <div class="fval"><select disabled aria-readonly="true" class="w-full" id="investor-code" name="investorCode" data-field="investor_code" data-testid="investor-code" data-field-type="select" aria-label="Investor Code">
+              <option selected>Summit Residential Mortgage-SRMNP1</option><option>Freddie Mac-FHLMC1</option><option>Fannie Mae-FNMA1</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="govt-loan-type">Govt Loan Type</label></div>
+            <div class="fval"><select disabled aria-readonly="true" class="w-full" id="govt-loan-type" name="govtLoanType" data-field="govt_loan_type" data-testid="govt-loan-type" data-field-type="select" aria-label="Govt Loan Type">
+              <option selected>Fannie Mae</option><option>Freddie Mac</option><option>FHA</option><option>VA</option><option>USDA</option><option>None</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="organization">Organization</label></div>
+            <div class="fval"><select disabled aria-readonly="true" class="w-full" id="organization" name="organization" data-field="organization" data-testid="organization" data-field-type="select" aria-label="Organization">
+              <option selected>$CCMS - ClientCo Mortgage Servicing</option><option>$NRZ - Brightfield Lending LLC</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="officer-code">Officer Code</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-sm" id="officer-code" name="officerCode" data-field="officer_code" data-testid="officer-code" data-field-type="text" aria-label="Officer Code" value="005"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="client-system">Client System</label></div>
+            <div class="fval"><select disabled aria-readonly="true" class="w-full" id="client-system" name="clientSystem" data-field="client_system" data-testid="client-system" data-field-type="select" aria-label="Client System">
+              <option selected>Servicing Platform</option><option>MSP</option><option>LoanServ</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="asset-manager">Asset Manager</label></div>
+            <div class="fval"><input readonly aria-readonly="true" type="text" class="w-full" id="asset-manager" name="assetManager" data-field="asset_manager" data-testid="asset-manager" data-field-type="text" aria-label="Asset Manager" value="Brightfield"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="loan-type">Loan Type</label></div>
+            <div class="fval"><select disabled aria-readonly="true" class="w-full" id="loan-type" name="loanType" data-field="loan_type" data-testid="loan-type" data-field-type="select" aria-label="Loan Type">
+              <option selected>Conventional</option><option>FHA</option><option>VA</option><option>USDA</option><option>Jumbo</option>
+            </select></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= COLLATERAL INFORMATION ================= -->
+  <section class="section" data-state="expanded" id="section-collateral-information" data-testid="section-collateral-information" data-section="collateral-information">
+    <button type="button" class="shead" data-testid="section-collateral-information-header" data-field-type="button" aria-expanded="true"><span class="caret" aria-hidden="true"></span>Collateral Information</button>
+    <div class="sbody">
+      <div class="toolrow">
+        <select class="fill" id="collateral-property-select" name="collateralProperty" data-field="collateral_property" data-testid="collateral-property-select"
+                data-field-type="select" aria-label="Collateral Property">
+          <option selected>21 BIRCHWOOD CT</option>
+        </select>
+        <button type="button" class="btn quiet gap-l" id="btn-add-new-line-to-property" data-testid="btn-add-new-line-to-property" data-field-type="button">Add New Line To Property</button>
+        <select class="fill fill-sm" id="line-type-select" name="lineType" data-field="line_type" data-testid="line-type-select" data-field-type="select" aria-label="Select Line Type">
+          <option selected>Select Line Type</option><option>Hazard</option><option>Flood</option><option>Wind</option><option>Earthquake</option>
+        </select>
+      </div>
+      <div class="toolrow">
+        <button type="button" class="btn quiet" id="btn-link-properties"       data-testid="btn-link-properties"       data-field-type="button">Link Properties</button>
+        <button type="button" class="btn quiet" id="btn-exposure-analysis"     data-testid="btn-exposure-analysis"     data-field-type="button">Exposure Analysis</button>
+        <button type="button" class="btn quiet" id="btn-communication-request" data-testid="btn-communication-request" data-field-type="button">Communication Request</button>
+      </div>
+
+      <div class="cols">
+        <div class="col-left">
+          <div class="frow"><div class="flabel"><label for="property-description">Property Description</label></div>
+            <div class="fval"><select class="w-full" id="property-description" name="propertyDescription" data-field="property_description" data-testid="property-description" data-field-type="select" aria-label="Property Description">
+              <option selected>Primary</option><option>Secondary</option><option>Investment</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="property-usage">Property Usage</label></div>
+            <div class="fval"><select class="w-full" id="property-usage" name="propertyUsage" data-field="property_usage" data-testid="property-usage" data-field-type="select" aria-label="Property Usage">
+              <option selected>Residential</option><option>Commercial</option><option>Mixed Use</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="number-of-property">Number of Property</label></div>
+            <div class="fval"><input type="text" class="w-sm" id="number-of-property" name="numberOfProperty" data-field="number_of_property" data-testid="number-of-property" data-field-type="text" aria-label="Number of Property" value="1 of 1"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="occupancy-status">Occupancy Status</label></div>
+            <div class="fval"><select class="w-full" id="occupancy-status" name="occupancyStatus" data-field="occupancy_status" data-testid="occupancy-status" data-field-type="select" aria-label="Occupancy Status">
+              <option selected>Occupied</option><option>Vacant</option><option>Tenant Occupied</option><option>Unknown</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="property-address-1">Property Address 1</label></div>
+            <div class="fval"><input type="text" class="w-full" id="property-address-1" name="propertyAddress1" data-field="property_address1" data-testid="property-address-1" data-field-type="text" aria-label="Property Address 1" value="21 BIRCHWOOD CT"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="property-city">City</label></div>
+            <div class="fval"><input type="text" class="w-full" id="property-city" name="propertyCity" data-field="property_city" data-testid="property-city" data-field-type="text" aria-label="City" value="BAYONNE"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="property-state">State/Zip</label></div>
+            <div class="fval">
+              <select class="w-xs" id="property-state" name="propertyState" data-field="property_state" data-testid="property-state" data-field-type="select" aria-label="Property State">
+                <option selected>NJ</option><option>NY</option><option>PA</option><option>CT</option>
+              </select>
+              <input type="text" class="w-sm" id="property-zip" name="propertyZip" data-field="property_zip" data-testid="property-zip" data-field-type="text" aria-label="Property Zip" value="07002">
+            </div></div>
+
+          <div class="frow"><div class="flabel"><label for="property-type">Property Type</label></div>
+            <div class="fval"><select class="w-full" id="property-type" name="propertyType" data-field="property_type" data-testid="property-type" data-field-type="select" aria-label="Property Type">
+              <option selected>TownHouse</option><option>Single Family</option><option>Condominium</option><option>Duplex</option><option>Multi-Family</option><option>Mobile Home</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="appraised-value">Appraised Value</label></div>
+            <div class="fval"><input type="text" class="w-full" id="appraised-value" name="appraisedValue" data-field="appraised_value" data-testid="appraised-value" data-field-type="text" aria-label="Appraised Value" value="399,999"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="lien-position">Lien Position</label></div>
+            <div class="fval"><select class="w-sm" id="lien-position" name="lienPosition" data-field="lien_position" data-testid="lien-position" data-field-type="select" aria-label="Lien Position">
+              <option selected>1st</option><option>2nd</option><option>3rd</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="flood-zone">Flood Zone</label></div>
+            <div class="fval"><input type="text" class="w-sm" id="flood-zone" name="floodZone" data-field="flood_zone" data-testid="flood-zone" data-field-type="text" aria-label="Flood Zone" value="X"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="flood-waiver">Flood Waiver</label></div>
+            <div class="fval"><select class="w-xs" id="flood-waiver" name="floodWaiver" data-field="flood_waiver" data-testid="flood-waiver" data-field-type="select" aria-label="Flood Waiver">
+              <option selected>N</option><option>Y</option>
+            </select></div></div>
+        </div>
+
+        <div class="col-right">
+          <div class="frow"><div class="flabel"><label for="flood-required">Flood Required</label></div>
+            <div class="fval"><select class="w-xs" id="flood-required" name="floodRequired" data-field="flood_required" data-testid="flood-required" data-field-type="select" aria-label="Flood Required">
+              <option selected>N</option><option>Y</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="loma-on-file">LOMA On File</label></div>
+            <div class="fval"><select class="w-xs" id="loma-on-file" name="lomaOnFile" data-field="loma_on_file" data-testid="loma-on-file" data-field-type="select" aria-label="LOMA On File">
+              <option selected>N</option><option>Y</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="property-id">Property Id</label></div>
+            <div class="fval"><input type="text" class="w-med" id="property-id" name="propertyId" data-field="property_id" data-testid="property-id" data-field-type="text" aria-label="Property Id" value="91974433"></div></div>
+
+          <div class="frow"><div class="flabel"><label for="insurable-value">Insurable Value</label></div>
+            <div class="fval">
+              <input type="text" class="w-med" id="insurable-value" name="insurableValue" data-field="insurable_value" data-testid="insurable-value" data-field-type="text" aria-label="Insurable Value" value="">
+              <input type="checkbox" id="insurable-value-checkbox" name="insurableValueFlag" data-field="insurable_value_flag" data-testid="insurable-value-checkbox" data-field-type="checkbox" aria-label="Use Insurable Value">
+            </div></div>
+
+          <div class="frow"><div class="flabel"><label for="actual-cash-value">Actual Cash Value(ACV)</label></div>
+            <div class="fval">
+              <input type="text" class="w-med" id="actual-cash-value" name="actualCashValue" data-field="actual_cash_value" data-testid="actual-cash-value" data-field-type="text" aria-label="Actual Cash Value (ACV)" value="">
+              <input type="checkbox" id="actual-cash-value-checkbox" name="actualCashValueFlag" data-field="actual_cash_value_flag" data-testid="actual-cash-value-checkbox" data-field-type="checkbox" aria-label="Use Actual Cash Value (ACV)">
+            </div></div>
+
+          <div class="frow"><div class="flabel"><label for="required-hazard-coverage">Required Hazard Coverage</label></div>
+            <div class="fval"><input type="text" class="w-full" id="required-hazard-coverage" name="requiredHazardCoverage" data-field="required_hazard_coverage" data-testid="required-hazard-coverage" data-field-type="text" aria-label="Required Hazard Coverage" value=""></div></div>
+
+          <div class="frow"><div class="flabel"><label for="required-flood-coverage">Required Flood Coverage</label></div>
+            <div class="fval"><input type="text" class="w-full" id="required-flood-coverage" name="requiredFloodCoverage" data-field="required_flood_coverage" data-testid="required-flood-coverage" data-field-type="text" aria-label="Required Flood Coverage" value=""></div></div>
+
+          <div class="frow"><div class="flabel"><label for="grandfathered">Grandfathered</label></div>
+            <div class="fval"><select class="w-xs" id="grandfathered" name="grandfathered" data-field="grandfathered" data-testid="grandfathered" data-field-type="select" aria-label="Grandfathered">
+              <option value="" selected></option><option>Yes</option><option>No</option>
+            </select></div></div>
+
+          <div class="frow"><div class="flabel"><label for="track-only-checkbox">Track Only</label></div>
+            <div class="fval"><input type="checkbox" id="track-only-checkbox" name="trackOnly" data-field="track_only" data-testid="track-only-checkbox" data-field-type="checkbox" aria-label="Track Only"></div></div>
+
+          <div class="actions-center">
+            <button type="button" class="btn" id="btn-save-collateral" data-testid="btn-save-collateral" data-field-type="button">Save Collateral</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INSURANCE LINES ================= -->
+  <section class="section" data-state="expanded" id="section-insurance-lines" data-testid="section-insurance-lines" data-section="insurance-lines">
+    <button type="button" class="shead" data-testid="section-insurance-lines-header" data-field-type="button" aria-expanded="true"><span class="caret" aria-hidden="true"></span>Insurance Lines</button>
+    <div class="sbody plain">
+
+      <!-- One tab per insurance line on this property. Each tab shows its own panel (div.linepanel with
+           data-line-type / data-line-id / data-policy-number); inactive panels are [hidden] but stay in the DOM.
+           Hazard keeps the original ids; Wind ids and test ids are prefixed "wind-line-". data-field names are the
+           same in every panel, so scope a lookup to the panel: #line-panel-wind [data-field="policy_number"]. -->
+      <div class="linetabs" role="tablist" aria-label="Insurance lines" data-testid="insurance-line-header" data-section="insurance-line-tabs">
+        <button type="button" class="linetab active" role="tab" aria-selected="true" aria-controls="line-panel-hazard" id="line-tab-hazard" data-testid="line-tab-hazard" data-field-type="button" data-line-type="Hazard">
+          <span data-testid="insurance-line-type">Hazard</span>
+          <span data-testid="insurance-line-policy-number">KAUY290374</span>
+          <span data-testid="insurance-line-id">85160742</span>
+        </button>
+        <button type="button" class="linetab" role="tab" aria-selected="false" aria-controls="line-panel-wind" id="line-tab-wind" data-testid="line-tab-wind" data-field-type="button" data-line-type="Wind">
+          <span data-testid="wind-line-insurance-line-type">Wind</span>
+          <span data-testid="wind-line-insurance-line-policy-number">LEWD660169</span>
+          <span data-testid="wind-line-insurance-line-id">54274864</span>
+        </button>
+        <div class="linebar"></div>
+      </div>
+
+      <div class="linepanel" role="tabpanel" id="line-panel-hazard" aria-labelledby="line-tab-hazard" data-testid="line-panel-hazard" data-section="insurance-line" data-line-type="Hazard" data-line-id="85160742" data-policy-number="KAUY290374">
+        <div class="warnbox" data-testid="warnings-block" data-section="warnings-block">
+          <h4>Warnings</h4>
+          <ul>
+            <li data-testid="warning-1" data-field="warning_1">The document represents a renewal payment, but the document's Expiration Date 9/13/2026 is not greater than the document's Policy Effective Date 9/13/2026.</li>
+            <li data-testid="warning-2" data-field="warning_2">The document appears to be a Renewal payment, but the document does not contain a Remit To.</li>
+            <li data-testid="warning-3" data-field="warning_3">The document cannot suggest a carrier, please review the selected carrier.</li>
+          </ul>
+        </div>
+
+        <!-- ---- Carrier and Agent ---- -->
+        <h3 class="sub" data-testid="heading-carrier-and-agent">Carrier and Agent</h3>
+        <div class="subpanel" data-testid="panel-carrier-and-agent" data-section="carrier-and-agent">
+          <div class="carrierwrap">
+            <table class="grid" data-testid="carrier-table">
+              <tr>
+                <td class="lbl"><label for="carrier-name">Carrier</label></td>
+                <td>
+                  <input class="fill" type="text" id="carrier-name" name="carrierName" data-field="carrier_name" data-testid="carrier-name" data-field-type="text" aria-label="Carrier" title="Press Enter to search for a carrier" value="Cedar Mutual Guard Ins">
+                  <textarea class="fill" id="carrier-address" name="carrierAddress" data-field="carrier_address" data-testid="carrier-address" data-field-type="textarea" aria-label="Carrier Address" rows="5">PO Box 44000
+  Dayton, OH 45401-4400 US
+  Phone: (800) 555-0142
+  Email:
+  underwriting3@example.com</textarea>
+                </td>
+                <td class="note" data-testid="carrier-suggestion-message" data-field="carrier_suggestion_message">Unable to suggest Carrier.</td>
+              </tr>
+              <tr>
+                <td class="lbl"><button type="button" class="linkbtn" id="btn-carrier-global-payee-address" data-testid="btn-carrier-global-payee-address" data-field-type="button">Carrier Global Payee Address</button></td>
+                <td colspan="2"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="carrier-global-payee-regular-mail-address">Carrier Global Payee Regular Mail Address</label></td>
+                <td colspan="2"><textarea class="fill" id="carrier-global-payee-regular-mail-address" name="carrierGlobalPayeeRegularMailAddress" data-field="carrier_global_payee_regular_mail_address" data-testid="carrier-global-payee-regular-mail-address" data-field-type="textarea" aria-label="Carrier Global Payee Regular Mail Address" rows="3">Cedar Mutual GUARD
+  PO Box 44000
+  Dayton, OH 45401-4400</textarea></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="carrier-global-payee-overnight-mail-address">Carrier Global Payee Overnight Mail Address</label></td>
+                <td colspan="2"><textarea class="fill" id="carrier-global-payee-overnight-mail-address" name="carrierGlobalPayeeOvernightMailAddress" data-field="carrier_global_payee_overnight_mail_address" data-testid="carrier-global-payee-overnight-mail-address" data-field-type="textarea" aria-label="Carrier Global Payee Overnight Mail Address" rows="3">Cedar Mutual GUARD
+  12-R W Fairview St
+  Brookfield, OH 44403</textarea></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="pay-agent-checkbox">Pay Agent</label></td>
+                <td colspan="2"><input type="checkbox" id="pay-agent-checkbox" name="payAgent" data-field="pay_agent" data-testid="pay-agent-checkbox" data-field-type="checkbox" aria-label="Pay Agent"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="mail-payment-to-agent-checkbox">Mail Payment To Agent</label></td>
+                <td colspan="2"><input type="checkbox" id="mail-payment-to-agent-checkbox" name="mailPaymentToAgent" data-field="mail_payment_to_agent" data-testid="mail-payment-to-agent-checkbox" data-field-type="checkbox" aria-label="Mail Payment To Agent"></td>
+              </tr>
+            </table>
+
+            <table class="grid" data-testid="agent-table">
+              <tr>
+                <td class="lbl"><label for="agent-search">Agent Search</label></td>
+                <td><input class="fill" type="text" id="agent-search" name="agentSearch" data-field="agent_search" data-testid="agent-search" data-field-type="text" aria-label="Agent Search" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-name">Agent Name</label></td>
+                <td><input class="fill" type="text" id="agent-name" name="agentName" data-field="agent_name" data-testid="agent-name" data-field-type="text" aria-label="Agent Name" value="INSURANCE ASSOCIATES PLUS AGENCY"></td>
+                <td><button type="button" class="sug-orange" data-testid="agent-name-suggested" data-field-type="button" data-target="agent-name" data-field="agent_name_suggested" data-value="INSURANCE ASSOCIATES PLUS AGENCY">INSURANCE ASSOCIATES PLUS AGENCY</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-address-1">Agent Address 1</label></td>
+                <td><input class="fill" type="text" id="agent-address-1" name="agentAddress1" data-field="agent_address1" data-testid="agent-address-1" data-field-type="text" aria-label="Agent Address 1" value="100 SAMPLE AVE"></td>
+                <td><button type="button" class="sug" data-testid="agent-address-1-suggested" data-field-type="button" data-target="agent-address-1" data-field="agent_address_1_suggested" data-value="100 SAMPLE AVENUE">100 SAMPLE AVENUE</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-address-2">Agent Address 2</label></td>
+                <td><input class="fill" type="text" id="agent-address-2" name="agentAddress2" data-field="agent_address2" data-testid="agent-address-2" data-field-type="text" aria-label="Agent Address 2" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-city">Agent City</label></td>
+                <td><input class="fill" type="text" id="agent-city" name="agentCity" data-field="agent_city" data-testid="agent-city" data-field-type="text" aria-label="Agent City" value="UNION"></td>
+                <td><button type="button" class="sug-orange" data-testid="agent-city-suggested" data-field-type="button" data-target="agent-city" data-field="agent_city_suggested" data-value="UNION">UNION</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-state">Agent State</label></td>
+                <td><select id="agent-state" name="agentState" data-field="agent_state" data-testid="agent-state" data-field-type="select" aria-label="Agent State" class="w-xs">
+                  <option selected>NJ</option><option>NY</option><option>PA</option><option>CT</option>
+                </select></td>
+                <td><button type="button" class="sug-orange" data-testid="agent-state-suggested" data-field-type="button" data-target="agent-state" data-field="agent_state_suggested" data-value="NJ">NJ</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-zip">Agent Zip</label></td>
+                <td><input class="fill" type="text" id="agent-zip" name="agentZip" data-field="agent_zip" data-testid="agent-zip" data-field-type="text" aria-label="Agent Zip" value="07099"></td>
+                <td><button type="button" class="sug-orange" data-testid="agent-zip-suggested" data-field-type="button" data-target="agent-zip" data-field="agent_zip_suggested" data-value="07099">07099</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-country">Agent Country</label></td>
+                <td><input class="fill" type="text" id="agent-country" name="agentCountry" data-field="agent_country" data-testid="agent-country" data-field-type="text" aria-label="Agent Country" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-email">Agent Email</label></td>
+                <td><input class="fill" type="text" id="agent-email" name="agentEmail" data-field="agent_email" data-testid="agent-email" data-field-type="text" aria-label="Agent Email" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-phone">Agent Phone</label></td>
+                <td><input class="fill" type="text" id="agent-phone" name="agentPhone" data-field="agent_phone" data-testid="agent-phone" data-field-type="text" aria-label="Agent Phone" value="(908) 555-0155"></td>
+                <td><button type="button" class="sug-orange" data-testid="agent-phone-suggested" data-field-type="button" data-target="agent-phone" data-field="agent_phone_suggested" data-value="9085550155">9085550155</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="agent-fax">Agent Fax</label></td>
+                <td><input class="fill" type="text" id="agent-fax" name="agentFax" data-field="agent_fax" data-testid="agent-fax" data-field-type="text" aria-label="Agent Fax" value=""></td>
+                <td></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ---- Note / Comment ---- -->
+        <h3 class="sub" data-testid="heading-note-comment">Note/Comment</h3>
+        <div class="subpanel" data-testid="panel-note-comment" data-section="note-comment">
+          <table class="grid">
+            <tr>
+              <td class="lbl"><label for="line-note-select">Line Note</label></td>
+              <td><select class="fill" id="line-note-select" name="lineNote" data-field="line_note" data-testid="line-note-select" data-field-type="select" aria-label="Line Note">
+                <option value="" selected></option><option>Renewal Received</option><option>Awaiting Declaration</option><option>Carrier Contacted</option>
+              </select></td>
+            </tr>
+            <tr>
+              <td class="lbl">Loan Comment</td>
+              <td>
+                <div class="comment-row">
+                  <div>
+                    <label for="comment-type-select">Comment Type</label><br>
+                    <select class="fill fill-sm" id="comment-type-select" name="commentType" data-field="comment_type" data-testid="comment-type-select" data-field-type="select" aria-label="Comment Type">
+                      <option value="" selected></option><option>General</option><option>Call</option><option>Payment</option>
+                    </select>
+                  </div>
+                  <textarea class="fill" id="loan-comment-textarea" name="loanComment" data-field="loan_comment" data-testid="loan-comment-textarea" data-field-type="textarea"
+                            aria-label="Loan Comment" placeholder="Add new loan comment here."></textarea>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- ---- Status ---- -->
+        <h3 class="sub" data-testid="heading-status">Status</h3>
+        <div class="subpanel" data-testid="panel-status" data-section="status">
+          <div class="flexrow">
+            <table class="grid">
+              <tr>
+                <td class="lbl"><label for="policy-number">Policy #</label></td>
+                <td><input class="fill" type="text" id="policy-number" name="policyNumber" data-field="policy_number" data-testid="policy-number" data-field-type="text" aria-label="Policy #" value="KAUY290374"></td>
+                <td><button type="button" class="sug" data-testid="policy-number-suggested" data-field-type="button" data-target="policy-number" data-field="policy_number_suggested" data-value="J2HO0000003068">J2HO0000003068</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="effective-date">Effective Date</label></td>
+                <td><input type="date" id="effective-date" name="effectiveDate" data-field="effective_date" data-testid="effective-date" data-field-type="date" aria-label="Effective Date" value="2025-09-13"></td>
+                <td><button type="button" class="sug-orange" data-testid="effective-date-suggested" data-field-type="button" data-target="effective-date" data-field="effective_date_suggested" data-value="2026-09-13">09/13/2026</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="expiration-date">Expiration Date</label></td>
+                <td><input type="date" id="expiration-date" name="expirationDate" data-field="expiration_date" data-testid="expiration-date" data-field-type="date" aria-label="Expiration Date" value="2026-09-13"></td>
+                <td><button type="button" class="sug-orange" data-testid="expiration-date-suggested" data-field-type="button" data-target="expiration-date" data-field="expiration_date_suggested" data-value="2026-09-13">09/13/2026</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="premium-due-date">Premium Due Date</label></td>
+                <td colspan="2"><input type="date" id="premium-due-date" name="premiumDueDate" data-field="premium_due_date" data-testid="premium-due-date" data-field-type="date" aria-label="Premium Due Date" value="2026-09-13"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="policy-term-select">Policy Term</label></td>
+                <td colspan="2"><select class="fill fill-sm" id="policy-term-select" name="policyTerm" data-field="policy_term" data-testid="policy-term-select" data-field-type="select" aria-label="Policy Term">
+                  <option selected>12 Months</option><option>6 Months</option><option>3 Months</option><option>1 Month</option>
+                </select></td>
+              </tr>
+            </table>
+
+            <table class="grid">
+              <tr>
+                <td class="lbl">Escrow Status</td>
+                <td>
+                  <label><input type="radio" id="escrow-status-yes" name="escrowStatus" data-field="escrow_status" value="Yes" data-testid="escrow-status-yes" data-field-type="radio" checked> Yes</label>
+                  <label class="radio-gap"><input type="radio" id="escrow-status-no" name="escrowStatus" data-field="escrow_status" value="No" data-testid="escrow-status-no" data-field-type="radio"> No</label>
+                </td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="earliest-cancellation-date">Earliest Cancellation Date</label></td>
+                <td><input type="date" id="earliest-cancellation-date" name="earliestCancellationDate" data-field="earliest_cancellation_date" data-testid="earliest-cancellation-date" data-field-type="date" aria-label="Earliest Cancellation Date" value="2026-09-13"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="earliest-cancellation-reinstate-reason">Earliest Cancellation/Reinstate Reason</label></td>
+                <td><select class="fill" id="earliest-cancellation-reinstate-reason" name="earliestCancellationReinstateReason" data-field="earliest_cancellation_reinstate_reason" data-testid="earliest-cancellation-reinstate-reason" data-field-type="select" aria-label="Earliest Cancellation/Reinstate Reason">
+                  <option selected>Cancel - NonRenewal</option><option>Cancel - Non Payment</option><option>Cancel - Insured Request</option><option>Reinstate</option>
+                </select></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="cancel-reinstate-date">Cancel/Reinstate Date</label></td>
+                <td><input type="date" id="cancel-reinstate-date" name="cancelReinstateDate" data-field="cancel_reinstate_date" data-testid="cancel-reinstate-date" data-field-type="date" aria-label="Cancel/Reinstate Date" value="2026-09-13"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="cancel-reinstate-reason">Cancel/Reinstate Reason</label></td>
+                <td><select class="fill" id="cancel-reinstate-reason" name="cancelReinstateReason" data-field="cancel_reinstate_reason" data-testid="cancel-reinstate-reason" data-field-type="select" aria-label="Cancel/Reinstate Reason">
+                  <option selected>Cancel - NonRenewal</option><option>Cancel - Non Payment</option><option>Cancel - Insured Request</option><option>Reinstate</option>
+                </select></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ---- Coverage ---- -->
+        <h3 class="sub" data-testid="heading-coverage">Coverage</h3>
+        <div class="subpanel" data-testid="panel-coverage" data-section="coverage">
+          <div class="flexrow">
+            <table class="grid">
+              <tr>
+                <td class="lbl"><label for="coverage-amount">Coverage Amount</label></td>
+                <td><input class="fill" type="text" id="coverage-amount" name="coverageAmount" data-field="coverage_amount" data-testid="coverage-amount" data-field-type="text" aria-label="Coverage Amount" value="445,677"></td>
+                <td><button type="button" class="sug" data-testid="coverage-amount-suggested" data-field-type="button" data-target="coverage-amount" data-field="coverage_amount_suggested" data-value="415,000">415,000</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="cert-flood-zone">Cert. Flood Zone</label></td>
+                <td colspan="2"><input class="fill" type="text" id="cert-flood-zone" name="certFloodZone" data-field="cert_flood_zone" data-testid="cert-flood-zone" data-field-type="text" aria-label="Cert. Flood Zone" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="deductible-amount">Deductible Amount</label></td>
+                <td><input class="fill" type="text" id="deductible-amount" name="deductibleAmount" data-field="deductible_amount" data-testid="deductible-amount" data-field-type="text" aria-label="Deductible Amount" value="1,000"></td>
+                <td><button type="button" class="sug" data-testid="deductible-amount-suggested" data-field-type="button" data-target="deductible-amount" data-field="deductible_amount_suggested" data-value="2,500">2,500</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="deductible-percentage">Deductible Percentage</label></td>
+                <td colspan="2"><input class="fill" type="text" id="deductible-percentage" name="deductiblePercentage" data-field="deductible_percentage" data-testid="deductible-percentage" data-field-type="text" aria-label="Deductible Percentage" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="no-replacement-coverage">No Replacement Coverage</label></td>
+                <td colspan="2"><input type="checkbox" id="no-replacement-coverage" name="noReplacementCoverage" data-field="no_replacement_coverage" data-testid="no-replacement-coverage" data-field-type="checkbox" aria-label="No Replacement Coverage"></td>
+              </tr>
+            </table>
+
+            <table class="grid">
+              <tr>
+                <td class="lbl"><label for="wind-deductible-amount">Wind Deductible Amount</label></td>
+                <td><input class="fill fill-sm" type="text" id="wind-deductible-amount" name="windDeductibleAmount" data-field="wind_deductible_amount" data-testid="wind-deductible-amount" data-field-type="text" aria-label="Wind Deductible Amount" value="1,000"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-deductible-amount-suggested" data-field-type="button" data-target="wind-deductible-amount" data-field="wind_deductible_amount_suggested" data-value="1,000">1,000</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-deductible-percentage">Wind Deductible Percentage</label></td>
+                <td colspan="2"><input class="fill fill-sm" type="text" id="wind-deductible-percentage" name="windDeductiblePercentage" data-field="wind_deductible_percentage" data-testid="wind-deductible-percentage" data-field-type="text" aria-label="Wind Deductible Percentage" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-excluded">Wind Excluded</label></td>
+                <td><input type="checkbox" id="wind-excluded" name="windExcluded" data-field="wind_excluded" data-testid="wind-excluded" data-field-type="checkbox" aria-label="Wind Excluded"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-excluded-suggested" data-field-type="button" data-target="wind-excluded" data-field="wind_excluded_suggested" data-value="false">False</button></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ---- Premium + Deficiencies ---- -->
+        <div class="premium-row">
+          <div class="premium-col" data-testid="panel-premium" data-section="premium">
+            <h3 class="sub" data-testid="heading-premium">Premium</h3>
+            <div class="payment-summary" data-testid="last-payment-summary" data-section="last-payment">
+              <span class="k">Last Payment Date:</span> <span data-testid="last-payment-date" data-field="last_payment_date">8/25/2025</span>
+              <span class="k">Amount:</span> <span data-testid="last-payment-amount" data-field="last_payment_amount">$2,446.32</span>
+              <span class="k">Payee:</span> <span data-testid="last-payment-payee" data-field="last_payment_payee">Cedar-11 - CEDAR MUTUAL GUARD PO Box 44000, DAYTON, OH 45401-4400</span><br>
+              *** Chk #: <span data-testid="last-payment-check-number" data-field="last_payment_check_number">3139695</span>
+              (<span data-testid="last-payment-check-status" data-field="last_payment_check_status">Cleared 09/11/2025</span>)
+            </div>
+
+            <div class="scroll-x">
+            <table class="grid premium" data-testid="premium-table">
+              <tr class="colhead">
+                <td></td>
+                <td>Make Payment</td>
+                <td>Expedite</td>
+                <td></td>
+                <td></td>
+                <td>Funding Only</td>
+                <td>Funding Only Comment</td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="premium-amount">Premium Amount</label></td>
+                <td><input type="checkbox" id="premium-amount-make-payment" name="premiumAmountMakePayment" data-field="premium_amount_make_payment" data-testid="premium-amount-make-payment" data-field-type="checkbox" aria-label="Premium Amount Make Payment"></td>
+                <td><input type="checkbox" id="premium-amount-expedite" name="premiumAmountExpedite" data-field="premium_amount_expedite" data-testid="premium-amount-expedite" data-field-type="checkbox" aria-label="Premium Amount Expedite"></td>
+                <td><input class="fill fill-sm" type="text" id="premium-amount" name="premiumAmount" data-field="premium_amount" data-testid="premium-amount" data-field-type="text" aria-label="Premium Amount" value="2,446.32"></td>
+                <td>
+                  <button type="button" class="sug-orange" data-testid="premium-funding-only-suggested" data-field-type="button" data-target="premium-amount-funding-only" data-field="premium_amount_funding_only_suggested" data-value="true">True</button><br>
+                  <button type="button" class="sug" data-testid="premium-amount-suggested" data-field-type="button" data-target="premium-amount" data-field="premium_amount_suggested" data-value="2,574.55">2,574.55</button>
+                </td>
+                <td><input type="checkbox" id="premium-amount-funding-only" name="premiumAmountFundingOnly" data-field="premium_amount_funding_only" data-testid="premium-amount-funding-only" data-field-type="checkbox" aria-label="Premium Amount Funding Only"></td>
+                <td><input class="fill" type="text" id="premium-amount-funding-only-comment" name="premiumAmountFundingOnlyComment" data-field="premium_amount_funding_only_comment" data-testid="premium-amount-funding-only-comment" data-field-type="text" aria-label="Premium Amount Funding Only Comment" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="additional-amt-due">Additional Amt Due</label></td>
+                <td><input type="checkbox" id="additional-amt-due-make-payment" name="additionalAmtDueMakePayment" data-field="additional_amt_due_make_payment" data-testid="additional-amt-due-make-payment" data-field-type="checkbox" aria-label="Additional Amount Due Make Payment"></td>
+                <td><input type="checkbox" id="additional-amt-due-expedite" name="additionalAmtDueExpedite" data-field="additional_amt_due_expedite" data-testid="additional-amt-due-expedite" data-field-type="checkbox" aria-label="Additional Amount Due Expedite"></td>
+                <td><input class="fill fill-sm" type="text" id="additional-amt-due" name="additionalAmtDue" data-field="additional_amt_due" data-testid="additional-amt-due" data-field-type="text" aria-label="Additional Amount Due" value=""></td>
+                <td></td>
+                <td><input type="checkbox" id="additional-amt-due-funding-only" name="additionalAmtDueFundingOnly" data-field="additional_amt_due_funding_only" data-testid="additional-amt-due-funding-only" data-field-type="checkbox" aria-label="Additional Amount Due Funding Only"></td>
+                <td><input class="fill" type="text" id="additional-amt-due-funding-only-comment" name="additionalAmtDueFundingOnlyComment" data-field="additional_amt_due_funding_only_comment" data-testid="additional-amt-due-funding-only-comment" data-field-type="text" aria-label="Additional Amount Due Funding Only Comment" value=""></td>
+              </tr>
+            </table>
+            </div>
+
+            <div class="after-table">
+              <button type="button" class="linkbtn" id="btn-view-active-disbursement" data-testid="btn-view-active-disbursement" data-field-type="button">View Active Disbursement</button>
+            </div>
+
+            <div class="after-table action-row">
+              <label for="relate-line-to-document">Relate line to document 82320264425656773562?</label>
+              <input type="checkbox" id="relate-line-to-document" name="relateLineToDocument" data-field="relate_line_to_document" data-testid="relate-line-to-document" data-field-type="checkbox" aria-label="Relate line to document 82320264425656773562" checked>
+              <button type="button" class="btn" id="btn-save-line-and-done-todo" data-testid="btn-save-line-and-done-todo" data-field-type="button">Save Line and Done To-Do Item</button>
+              <button type="button" class="btn" id="btn-save-insurance-line" data-testid="btn-save-insurance-line" data-field-type="button">Save Insurance Line</button>
+            </div>
+          </div>
+
+          <!-- ---- Deficiencies ---- -->
+          <div class="defwrap" data-testid="panel-deficiencies" data-section="deficiencies">
+            <h3 class="sub" data-testid="heading-deficiencies">Deficiencies</h3>
+            <button type="button" class="btn quiet" id="btn-request-letters" data-testid="btn-request-letters" data-field-type="button">Request Letters</button>
+            <table class="def" data-testid="deficiencies-table">
+              <thead><tr><th>Title</th><th>Deficient</th></tr></thead>
+              <tbody>
+                <tr data-testid="deficiency-row-mid-term-bwr-notified">
+                  <td class="title"><label for="deficiency-mid-term-bwr-notified">Mid-Term Bwr Notified to Return Refund</label></td>
+                  <td><input type="checkbox" id="deficiency-mid-term-bwr-notified" name="deficiencyMidTermBwrNotified" data-field="deficiency_mid_term_bwr_notified" data-testid="deficiency-mid-term-bwr-notified" data-field-type="checkbox" aria-label="Deficient: Mid-Term Bwr Notified to Return Refund"></td>
+                </tr>
+                <tr data-testid="deficiency-row-insurance-carrier-rating">
+                  <td class="title"><label for="deficiency-insurance-carrier-rating">Insurance Carrier Rating</label></td>
+                  <td><input type="checkbox" id="deficiency-insurance-carrier-rating" name="deficiencyInsuranceCarrierRating" data-field="deficiency_insurance_carrier_rating" data-testid="deficiency-insurance-carrier-rating" data-field-type="checkbox" aria-label="Deficient: Insurance Carrier Rating"></td>
+                </tr>
+                <tr data-testid="deficiency-row-deductible">
+                  <td class="title"><label for="deficiency-deductible">Deductible</label></td>
+                  <td><input type="checkbox" id="deficiency-deductible" name="deficiencyDeductible" data-field="deficiency_deductible" data-testid="deficiency-deductible" data-field-type="checkbox" aria-label="Deficient: Deductible"></td>
+                </tr>
+                <tr data-testid="deficiency-row-acord-form-unacceptable">
+                  <td class="title"><label for="deficiency-acord-form-unacceptable">ACORD Form Unacceptable</label></td>
+                  <td><input type="checkbox" id="deficiency-acord-form-unacceptable" name="deficiencyAcordFormUnacceptable" data-field="deficiency_acord_form_unacceptable" data-testid="deficiency-acord-form-unacceptable" data-field-type="checkbox" aria-label="Deficient: ACORD Form Unacceptable"></td>
+                </tr>
+                <tr data-testid="deficiency-row-declaration-required">
+                  <td class="title"><label for="deficiency-declaration-required">Declaration Required</label></td>
+                  <td>
+                    <input type="checkbox" id="deficiency-declaration-required" name="deficiencyDeclarationRequired" data-field="deficiency_declaration_required" data-testid="deficiency-declaration-required" data-field-type="checkbox" aria-label="Deficient: Declaration Required">
+                    <label class="radioline"><input type="radio" id="declaration-required-corrected" name="declarationRequiredStatus" data-field="declaration_required_status" value="Corrected" data-testid="declaration-required-corrected" data-field-type="radio" checked> Corrected</label>
+                    <label class="radioline"><input type="radio" id="declaration-required-waived" name="declarationRequiredStatus" data-field="declaration_required_status" value="Waived" data-testid="declaration-required-waived" data-field-type="radio"> Waived</label>
+                    <div data-testid="declaration-required-letter" data-field="declaration_required_letter">DecReqd.1 letter 8/22/2025</div>
+                    <div data-testid="declaration-required-status-updated" data-field="declaration_required_status_updated">Status updated on 8/22/2025</div>
+                  </td>
+                </tr>
+                <tr data-testid="deficiency-row-mortgagee-clause">
+                  <td class="title"><label for="deficiency-mortgagee-clause">Mortgagee Clause</label></td>
+                  <td>
+                    <input type="checkbox" id="deficiency-mortgagee-clause" name="deficiencyMortgageeClause" data-field="deficiency_mortgagee_clause" data-testid="deficiency-mortgagee-clause" data-field-type="checkbox" aria-label="Deficient: Mortgagee Clause">
+                    <label class="radioline"><input type="radio" id="mortgagee-clause-corrected" name="mortgageeClauseStatus" data-field="mortgagee_clause_status" value="Corrected" data-testid="mortgagee-clause-corrected" data-field-type="radio" checked> Corrected</label>
+                    <label class="radioline"><input type="radio" id="mortgagee-clause-waived" name="mortgageeClauseStatus" data-field="mortgagee_clause_status" value="Waived" data-testid="mortgagee-clause-waived" data-field-type="radio"> Waived</label>
+                    <div data-testid="mortgagee-clause-letter" data-field="mortgagee_clause_letter">MtgClausP.7 letter 8/14/2024</div>
+                    <div data-testid="mortgagee-clause-status-updated" data-field="mortgagee_clause_status_updated">Status updated on 8/14/2024</div>
+                  </td>
+                </tr>
+                <tr data-testid="deficiency-row-property-address-on-policy">
+                  <td class="title"><label for="deficiency-property-address-on-policy">Property Address on Policy</label></td>
+                  <td><input type="checkbox" id="deficiency-property-address-on-policy" name="deficiencyPropertyAddressOnPolicy" data-field="deficiency_property_address_on_policy" data-testid="deficiency-property-address-on-policy" data-field-type="checkbox" aria-label="Deficient: Property Address on Policy"></td>
+                </tr>
+                <tr data-testid="deficiency-row-name-insured">
+                  <td class="title"><label for="deficiency-name-insured">Name Insured</label></td>
+                  <td><input type="checkbox" id="deficiency-name-insured" name="deficiencyNameInsured" data-field="deficiency_name_insured" data-testid="deficiency-name-insured" data-field-type="checkbox" aria-label="Deficient: Name Insured"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="linepanel" role="tabpanel" id="line-panel-wind" aria-labelledby="line-tab-wind" data-testid="line-panel-wind" data-section="insurance-line" data-line-type="Wind" data-line-id="54274864" data-policy-number="LEWD660169" hidden>
+        <div class="warnbox" data-testid="wind-line-warnings-block" data-section="warnings-block">
+          <h4>Warnings</h4>
+          <ul>
+            <li data-testid="wind-line-warning-1" data-field="warning_1">The document's Wind Deductible 2% ($8,914) does not match the line's Wind Deductible Amount 8,000.</li>
+            <li data-testid="wind-line-warning-2" data-field="warning_2">The document appears to be a Renewal payment, but the document does not contain a Remit To.</li>
+          </ul>
+        </div>
+
+        <!-- ---- Carrier and Agent ---- -->
+        <h3 class="sub" data-testid="wind-line-heading-carrier-and-agent">Carrier and Agent</h3>
+        <div class="subpanel" data-testid="wind-line-panel-carrier-and-agent" data-section="carrier-and-agent">
+          <div class="carrierwrap">
+            <table class="grid" data-testid="wind-line-carrier-table">
+              <tr>
+                <td class="lbl"><label for="wind-line-carrier-name">Carrier</label></td>
+                <td>
+                  <input class="fill" type="text" id="wind-line-carrier-name" name="windLineCarrierName" data-field="carrier_name" data-testid="wind-line-carrier-name" data-field-type="text" aria-label="Carrier" title="Press Enter to search for a carrier" value="Cedar Mutual Guard Ins">
+                  <textarea class="fill" id="wind-line-carrier-address" name="windLineCarrierAddress" data-field="carrier_address" data-testid="wind-line-carrier-address" data-field-type="textarea" aria-label="Carrier Address" rows="5">PO Box 44000
+  Dayton, OH 45401-4400 US
+  Phone: (800) 555-0142
+  Email:
+  underwriting3@example.com</textarea>
+                </td>
+                <td class="note" data-testid="wind-line-carrier-suggestion-message" data-field="carrier_suggestion_message">Unable to suggest Carrier.</td>
+              </tr>
+              <tr>
+                <td class="lbl"><button type="button" class="linkbtn" id="wind-line-btn-carrier-global-payee-address" data-testid="wind-line-btn-carrier-global-payee-address" data-field-type="button">Carrier Global Payee Address</button></td>
+                <td colspan="2"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-carrier-global-payee-regular-mail-address">Carrier Global Payee Regular Mail Address</label></td>
+                <td colspan="2"><textarea class="fill" id="wind-line-carrier-global-payee-regular-mail-address" name="windLineCarrierGlobalPayeeRegularMailAddress" data-field="carrier_global_payee_regular_mail_address" data-testid="wind-line-carrier-global-payee-regular-mail-address" data-field-type="textarea" aria-label="Carrier Global Payee Regular Mail Address" rows="3">Cedar Mutual GUARD
+  PO Box 44000
+  Dayton, OH 45401-4400</textarea></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-carrier-global-payee-overnight-mail-address">Carrier Global Payee Overnight Mail Address</label></td>
+                <td colspan="2"><textarea class="fill" id="wind-line-carrier-global-payee-overnight-mail-address" name="windLineCarrierGlobalPayeeOvernightMailAddress" data-field="carrier_global_payee_overnight_mail_address" data-testid="wind-line-carrier-global-payee-overnight-mail-address" data-field-type="textarea" aria-label="Carrier Global Payee Overnight Mail Address" rows="3">Cedar Mutual GUARD
+  12-R W Fairview St
+  Brookfield, OH 44403</textarea></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-pay-agent-checkbox">Pay Agent</label></td>
+                <td colspan="2"><input type="checkbox" id="wind-line-pay-agent-checkbox" name="windLinePayAgent" data-field="pay_agent" data-testid="wind-line-pay-agent-checkbox" data-field-type="checkbox" aria-label="Pay Agent"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-mail-payment-to-agent-checkbox">Mail Payment To Agent</label></td>
+                <td colspan="2"><input type="checkbox" id="wind-line-mail-payment-to-agent-checkbox" name="windLineMailPaymentToAgent" data-field="mail_payment_to_agent" data-testid="wind-line-mail-payment-to-agent-checkbox" data-field-type="checkbox" aria-label="Mail Payment To Agent"></td>
+              </tr>
+            </table>
+
+            <table class="grid" data-testid="wind-line-agent-table">
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-search">Agent Search</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-search" name="windLineAgentSearch" data-field="agent_search" data-testid="wind-line-agent-search" data-field-type="text" aria-label="Agent Search" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-name">Agent Name</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-name" name="windLineAgentName" data-field="agent_name" data-testid="wind-line-agent-name" data-field-type="text" aria-label="Agent Name" value="INSURANCE ASSOCIATES PLUS AGENCY"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-agent-name-suggested" data-field-type="button" data-target="wind-line-agent-name" data-field="agent_name_suggested" data-value="INSURANCE ASSOCIATES PLUS AGENCY">INSURANCE ASSOCIATES PLUS AGENCY</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-address-1">Agent Address 1</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-address-1" name="windLineAgentAddress1" data-field="agent_address1" data-testid="wind-line-agent-address-1" data-field-type="text" aria-label="Agent Address 1" value="100 SAMPLE AVE"></td>
+                <td><button type="button" class="sug" data-testid="wind-line-agent-address-1-suggested" data-field-type="button" data-target="wind-line-agent-address-1" data-field="agent_address_1_suggested" data-value="100 SAMPLE AVENUE">100 SAMPLE AVENUE</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-address-2">Agent Address 2</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-address-2" name="windLineAgentAddress2" data-field="agent_address2" data-testid="wind-line-agent-address-2" data-field-type="text" aria-label="Agent Address 2" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-city">Agent City</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-city" name="windLineAgentCity" data-field="agent_city" data-testid="wind-line-agent-city" data-field-type="text" aria-label="Agent City" value="UNION"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-agent-city-suggested" data-field-type="button" data-target="wind-line-agent-city" data-field="agent_city_suggested" data-value="UNION">UNION</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-state">Agent State</label></td>
+                <td><select id="wind-line-agent-state" name="windLineAgentState" data-field="agent_state" data-testid="wind-line-agent-state" data-field-type="select" aria-label="Agent State" class="w-xs">
+                  <option selected>NJ</option><option>NY</option><option>PA</option><option>CT</option>
+                </select></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-agent-state-suggested" data-field-type="button" data-target="wind-line-agent-state" data-field="agent_state_suggested" data-value="NJ">NJ</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-zip">Agent Zip</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-zip" name="windLineAgentZip" data-field="agent_zip" data-testid="wind-line-agent-zip" data-field-type="text" aria-label="Agent Zip" value="07099"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-agent-zip-suggested" data-field-type="button" data-target="wind-line-agent-zip" data-field="agent_zip_suggested" data-value="07099">07099</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-country">Agent Country</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-country" name="windLineAgentCountry" data-field="agent_country" data-testid="wind-line-agent-country" data-field-type="text" aria-label="Agent Country" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-email">Agent Email</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-email" name="windLineAgentEmail" data-field="agent_email" data-testid="wind-line-agent-email" data-field-type="text" aria-label="Agent Email" value=""></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-phone">Agent Phone</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-phone" name="windLineAgentPhone" data-field="agent_phone" data-testid="wind-line-agent-phone" data-field-type="text" aria-label="Agent Phone" value="(908) 555-0155"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-agent-phone-suggested" data-field-type="button" data-target="wind-line-agent-phone" data-field="agent_phone_suggested" data-value="9085550155">9085550155</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-agent-fax">Agent Fax</label></td>
+                <td><input class="fill" type="text" id="wind-line-agent-fax" name="windLineAgentFax" data-field="agent_fax" data-testid="wind-line-agent-fax" data-field-type="text" aria-label="Agent Fax" value=""></td>
+                <td></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ---- Note / Comment ---- -->
+        <h3 class="sub" data-testid="wind-line-heading-note-comment">Note/Comment</h3>
+        <div class="subpanel" data-testid="wind-line-panel-note-comment" data-section="note-comment">
+          <table class="grid">
+            <tr>
+              <td class="lbl"><label for="wind-line-line-note-select">Line Note</label></td>
+              <td><select class="fill" id="wind-line-line-note-select" name="windLineLineNote" data-field="line_note" data-testid="wind-line-line-note-select" data-field-type="select" aria-label="Line Note">
+                <option value="" selected></option><option>Renewal Received</option><option>Awaiting Declaration</option><option>Carrier Contacted</option>
+              </select></td>
+            </tr>
+            <tr>
+              <td class="lbl">Loan Comment</td>
+              <td>
+                <div class="comment-row">
+                  <div>
+                    <label for="wind-line-comment-type-select">Comment Type</label><br>
+                    <select class="fill fill-sm" id="wind-line-comment-type-select" name="windLineCommentType" data-field="comment_type" data-testid="wind-line-comment-type-select" data-field-type="select" aria-label="Comment Type">
+                      <option value="" selected></option><option>General</option><option>Call</option><option>Payment</option>
+                    </select>
+                  </div>
+                  <textarea class="fill" id="wind-line-loan-comment-textarea" name="windLineLoanComment" data-field="loan_comment" data-testid="wind-line-loan-comment-textarea" data-field-type="textarea"
+                            aria-label="Loan Comment" placeholder="Add new loan comment here."></textarea>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- ---- Status ---- -->
+        <h3 class="sub" data-testid="wind-line-heading-status">Status</h3>
+        <div class="subpanel" data-testid="wind-line-panel-status" data-section="status">
+          <div class="flexrow">
+            <table class="grid">
+              <tr>
+                <td class="lbl"><label for="wind-line-policy-number">Policy #</label></td>
+                <td><input class="fill" type="text" id="wind-line-policy-number" name="windLinePolicyNumber" data-field="policy_number" data-testid="wind-line-policy-number" data-field-type="text" aria-label="Policy #" value="LEWD660169"></td>
+                <td><button type="button" class="sug" data-testid="wind-line-policy-number-suggested" data-field-type="button" data-target="wind-line-policy-number" data-field="policy_number_suggested" data-value="J2WD0000003069">J2WD0000003069</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-effective-date">Effective Date</label></td>
+                <td><input type="date" id="wind-line-effective-date" name="windLineEffectiveDate" data-field="effective_date" data-testid="wind-line-effective-date" data-field-type="date" aria-label="Effective Date" value="2025-09-13"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-effective-date-suggested" data-field-type="button" data-target="wind-line-effective-date" data-field="effective_date_suggested" data-value="2026-09-13">09/13/2026</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-expiration-date">Expiration Date</label></td>
+                <td><input type="date" id="wind-line-expiration-date" name="windLineExpirationDate" data-field="expiration_date" data-testid="wind-line-expiration-date" data-field-type="date" aria-label="Expiration Date" value="2026-09-13"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-expiration-date-suggested" data-field-type="button" data-target="wind-line-expiration-date" data-field="expiration_date_suggested" data-value="2026-09-13">09/13/2026</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-premium-due-date">Premium Due Date</label></td>
+                <td colspan="2"><input type="date" id="wind-line-premium-due-date" name="windLinePremiumDueDate" data-field="premium_due_date" data-testid="wind-line-premium-due-date" data-field-type="date" aria-label="Premium Due Date" value="2026-09-13"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-policy-term-select">Policy Term</label></td>
+                <td colspan="2"><select class="fill fill-sm" id="wind-line-policy-term-select" name="windLinePolicyTerm" data-field="policy_term" data-testid="wind-line-policy-term-select" data-field-type="select" aria-label="Policy Term">
+                  <option selected>12 Months</option><option>6 Months</option><option>3 Months</option><option>1 Month</option>
+                </select></td>
+              </tr>
+            </table>
+
+            <table class="grid">
+              <tr>
+                <td class="lbl">Escrow Status</td>
+                <td>
+                  <label><input type="radio" id="wind-line-escrow-status-yes" name="windLineEscrowStatus" data-field="escrow_status" value="Yes" data-testid="wind-line-escrow-status-yes" data-field-type="radio" checked> Yes</label>
+                  <label class="radio-gap"><input type="radio" id="wind-line-escrow-status-no" name="windLineEscrowStatus" data-field="escrow_status" value="No" data-testid="wind-line-escrow-status-no" data-field-type="radio"> No</label>
+                </td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-earliest-cancellation-date">Earliest Cancellation Date</label></td>
+                <td><input type="date" id="wind-line-earliest-cancellation-date" name="windLineEarliestCancellationDate" data-field="earliest_cancellation_date" data-testid="wind-line-earliest-cancellation-date" data-field-type="date" aria-label="Earliest Cancellation Date" value="2026-09-13"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-earliest-cancellation-reinstate-reason">Earliest Cancellation/Reinstate Reason</label></td>
+                <td><select class="fill" id="wind-line-earliest-cancellation-reinstate-reason" name="windLineEarliestCancellationReinstateReason" data-field="earliest_cancellation_reinstate_reason" data-testid="wind-line-earliest-cancellation-reinstate-reason" data-field-type="select" aria-label="Earliest Cancellation/Reinstate Reason">
+                  <option selected>Cancel - NonRenewal</option><option>Cancel - Non Payment</option><option>Cancel - Insured Request</option><option>Reinstate</option>
+                </select></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-cancel-reinstate-date">Cancel/Reinstate Date</label></td>
+                <td><input type="date" id="wind-line-cancel-reinstate-date" name="windLineCancelReinstateDate" data-field="cancel_reinstate_date" data-testid="wind-line-cancel-reinstate-date" data-field-type="date" aria-label="Cancel/Reinstate Date" value="2026-09-13"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-cancel-reinstate-reason">Cancel/Reinstate Reason</label></td>
+                <td><select class="fill" id="wind-line-cancel-reinstate-reason" name="windLineCancelReinstateReason" data-field="cancel_reinstate_reason" data-testid="wind-line-cancel-reinstate-reason" data-field-type="select" aria-label="Cancel/Reinstate Reason">
+                  <option selected>Cancel - NonRenewal</option><option>Cancel - Non Payment</option><option>Cancel - Insured Request</option><option>Reinstate</option>
+                </select></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ---- Coverage ---- -->
+        <h3 class="sub" data-testid="wind-line-heading-coverage">Coverage</h3>
+        <div class="subpanel" data-testid="wind-line-panel-coverage" data-section="coverage">
+          <div class="flexrow">
+            <table class="grid">
+              <tr>
+                <td class="lbl"><label for="wind-line-coverage-amount">Coverage Amount</label></td>
+                <td><input class="fill" type="text" id="wind-line-coverage-amount" name="windLineCoverageAmount" data-field="coverage_amount" data-testid="wind-line-coverage-amount" data-field-type="text" aria-label="Coverage Amount" value="445,677"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-coverage-amount-suggested" data-field-type="button" data-target="wind-line-coverage-amount" data-field="coverage_amount_suggested" data-value="445,677">445,677</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-cert-flood-zone">Cert. Flood Zone</label></td>
+                <td colspan="2"><input class="fill" type="text" id="wind-line-cert-flood-zone" name="windLineCertFloodZone" data-field="cert_flood_zone" data-testid="wind-line-cert-flood-zone" data-field-type="text" aria-label="Cert. Flood Zone" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-deductible-amount">Deductible Amount</label></td>
+                <td><input class="fill" type="text" id="wind-line-deductible-amount" name="windLineDeductibleAmount" data-field="deductible_amount" data-testid="wind-line-deductible-amount" data-field-type="text" aria-label="Deductible Amount" value=""></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-deductible-amount-suggested" data-field-type="button" data-target="wind-line-deductible-amount" data-field="deductible_amount_suggested" data-value="">None</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-deductible-percentage">Deductible Percentage</label></td>
+                <td colspan="2"><input class="fill" type="text" id="wind-line-deductible-percentage" name="windLineDeductiblePercentage" data-field="deductible_percentage" data-testid="wind-line-deductible-percentage" data-field-type="text" aria-label="Deductible Percentage" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-no-replacement-coverage">No Replacement Coverage</label></td>
+                <td colspan="2"><input type="checkbox" id="wind-line-no-replacement-coverage" name="windLineNoReplacementCoverage" data-field="no_replacement_coverage" data-testid="wind-line-no-replacement-coverage" data-field-type="checkbox" aria-label="No Replacement Coverage"></td>
+              </tr>
+            </table>
+
+            <table class="grid">
+              <tr>
+                <td class="lbl"><label for="wind-line-wind-deductible-amount">Wind Deductible Amount</label></td>
+                <td><input class="fill fill-sm" type="text" id="wind-line-wind-deductible-amount" name="windLineWindDeductibleAmount" data-field="wind_deductible_amount" data-testid="wind-line-wind-deductible-amount" data-field-type="text" aria-label="Wind Deductible Amount" value="8,000"></td>
+                <td><button type="button" class="sug" data-testid="wind-line-wind-deductible-amount-suggested" data-field-type="button" data-target="wind-line-wind-deductible-amount" data-field="wind_deductible_amount_suggested" data-value="8,914">8,914</button></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-wind-deductible-percentage">Wind Deductible Percentage</label></td>
+                <td colspan="2"><input class="fill fill-sm" type="text" id="wind-line-wind-deductible-percentage" name="windLineWindDeductiblePercentage" data-field="wind_deductible_percentage" data-testid="wind-line-wind-deductible-percentage" data-field-type="text" aria-label="Wind Deductible Percentage" value="2%"></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-wind-excluded">Wind Excluded</label></td>
+                <td><input type="checkbox" id="wind-line-wind-excluded" name="windLineWindExcluded" data-field="wind_excluded" data-testid="wind-line-wind-excluded" data-field-type="checkbox" aria-label="Wind Excluded"></td>
+                <td><button type="button" class="sug-orange" data-testid="wind-line-wind-excluded-suggested" data-field-type="button" data-target="wind-line-wind-excluded" data-field="wind_excluded_suggested" data-value="false">False</button></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ---- Premium + Deficiencies ---- -->
+        <div class="premium-row">
+          <div class="premium-col" data-testid="wind-line-panel-premium" data-section="premium">
+            <h3 class="sub" data-testid="wind-line-heading-premium">Premium</h3>
+            <div class="payment-summary" data-testid="wind-line-last-payment-summary" data-section="last-payment">
+              <span class="k">Last Payment Date:</span> <span data-testid="wind-line-last-payment-date" data-field="last_payment_date">8/25/2025</span>
+              <span class="k">Amount:</span> <span data-testid="wind-line-last-payment-amount" data-field="last_payment_amount">$1,184.00</span>
+              <span class="k">Payee:</span> <span data-testid="wind-line-last-payment-payee" data-field="last_payment_payee">Cedar-11 - CEDAR MUTUAL GUARD PO Box 44000, DAYTON, OH 45401-4400</span><br>
+              *** Chk #: <span data-testid="wind-line-last-payment-check-number" data-field="last_payment_check_number">7274287</span>
+              (<span data-testid="wind-line-last-payment-check-status" data-field="last_payment_check_status">Cleared 09/11/2025</span>)
+            </div>
+
+            <div class="scroll-x">
+            <table class="grid premium" data-testid="wind-line-premium-table">
+              <tr class="colhead">
+                <td></td>
+                <td>Make Payment</td>
+                <td>Expedite</td>
+                <td></td>
+                <td></td>
+                <td>Funding Only</td>
+                <td>Funding Only Comment</td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-premium-amount">Premium Amount</label></td>
+                <td><input type="checkbox" id="wind-line-premium-amount-make-payment" name="windLinePremiumAmountMakePayment" data-field="premium_amount_make_payment" data-testid="wind-line-premium-amount-make-payment" data-field-type="checkbox" aria-label="Premium Amount Make Payment"></td>
+                <td><input type="checkbox" id="wind-line-premium-amount-expedite" name="windLinePremiumAmountExpedite" data-field="premium_amount_expedite" data-testid="wind-line-premium-amount-expedite" data-field-type="checkbox" aria-label="Premium Amount Expedite"></td>
+                <td><input class="fill fill-sm" type="text" id="wind-line-premium-amount" name="windLinePremiumAmount" data-field="premium_amount" data-testid="wind-line-premium-amount" data-field-type="text" aria-label="Premium Amount" value="1,184.00"></td>
+                <td>
+                  <button type="button" class="sug-orange" data-testid="wind-line-premium-funding-only-suggested" data-field-type="button" data-target="wind-line-premium-amount-funding-only" data-field="premium_amount_funding_only_suggested" data-value="true">True</button><br>
+                  <button type="button" class="sug" data-testid="wind-line-premium-amount-suggested" data-field-type="button" data-target="wind-line-premium-amount" data-field="premium_amount_suggested" data-value="1,236.40">1,236.40</button>
+                </td>
+                <td><input type="checkbox" id="wind-line-premium-amount-funding-only" name="windLinePremiumAmountFundingOnly" data-field="premium_amount_funding_only" data-testid="wind-line-premium-amount-funding-only" data-field-type="checkbox" aria-label="Premium Amount Funding Only"></td>
+                <td><input class="fill" type="text" id="wind-line-premium-amount-funding-only-comment" name="windLinePremiumAmountFundingOnlyComment" data-field="premium_amount_funding_only_comment" data-testid="wind-line-premium-amount-funding-only-comment" data-field-type="text" aria-label="Premium Amount Funding Only Comment" value=""></td>
+              </tr>
+              <tr>
+                <td class="lbl"><label for="wind-line-additional-amt-due">Additional Amt Due</label></td>
+                <td><input type="checkbox" id="wind-line-additional-amt-due-make-payment" name="windLineAdditionalAmtDueMakePayment" data-field="additional_amt_due_make_payment" data-testid="wind-line-additional-amt-due-make-payment" data-field-type="checkbox" aria-label="Additional Amount Due Make Payment"></td>
+                <td><input type="checkbox" id="wind-line-additional-amt-due-expedite" name="windLineAdditionalAmtDueExpedite" data-field="additional_amt_due_expedite" data-testid="wind-line-additional-amt-due-expedite" data-field-type="checkbox" aria-label="Additional Amount Due Expedite"></td>
+                <td><input class="fill fill-sm" type="text" id="wind-line-additional-amt-due" name="windLineAdditionalAmtDue" data-field="additional_amt_due" data-testid="wind-line-additional-amt-due" data-field-type="text" aria-label="Additional Amount Due" value=""></td>
+                <td></td>
+                <td><input type="checkbox" id="wind-line-additional-amt-due-funding-only" name="windLineAdditionalAmtDueFundingOnly" data-field="additional_amt_due_funding_only" data-testid="wind-line-additional-amt-due-funding-only" data-field-type="checkbox" aria-label="Additional Amount Due Funding Only"></td>
+                <td><input class="fill" type="text" id="wind-line-additional-amt-due-funding-only-comment" name="windLineAdditionalAmtDueFundingOnlyComment" data-field="additional_amt_due_funding_only_comment" data-testid="wind-line-additional-amt-due-funding-only-comment" data-field-type="text" aria-label="Additional Amount Due Funding Only Comment" value=""></td>
+              </tr>
+            </table>
+            </div>
+
+            <div class="after-table">
+              <button type="button" class="linkbtn" id="wind-line-btn-view-active-disbursement" data-testid="wind-line-btn-view-active-disbursement" data-field-type="button">View Active Disbursement</button>
+            </div>
+
+            <div class="after-table action-row">
+              <label for="wind-line-relate-line-to-document">Relate line to document 82320264425656773562?</label>
+              <input type="checkbox" id="wind-line-relate-line-to-document" name="windLineRelateLineToDocument" data-field="relate_line_to_document" data-testid="wind-line-relate-line-to-document" data-field-type="checkbox" aria-label="Relate line to document 82320264425656773562" checked>
+              <button type="button" class="btn" id="wind-line-btn-save-line-and-done-todo" data-testid="wind-line-btn-save-line-and-done-todo" data-field-type="button">Save Line and Done To-Do Item</button>
+              <button type="button" class="btn" id="wind-line-btn-save-insurance-line" data-testid="wind-line-btn-save-insurance-line" data-field-type="button">Save Insurance Line</button>
+            </div>
+          </div>
+
+          <!-- ---- Deficiencies ---- -->
+          <div class="defwrap" data-testid="wind-line-panel-deficiencies" data-section="deficiencies">
+            <h3 class="sub" data-testid="wind-line-heading-deficiencies">Deficiencies</h3>
+            <button type="button" class="btn quiet" id="wind-line-btn-request-letters" data-testid="wind-line-btn-request-letters" data-field-type="button">Request Letters</button>
+            <table class="def" data-testid="wind-line-deficiencies-table">
+              <thead><tr><th>Title</th><th>Deficient</th></tr></thead>
+              <tbody>
+                <tr data-testid="wind-line-deficiency-row-mid-term-bwr-notified">
+                  <td class="title"><label for="wind-line-deficiency-mid-term-bwr-notified">Mid-Term Bwr Notified to Return Refund</label></td>
+                  <td><input type="checkbox" id="wind-line-deficiency-mid-term-bwr-notified" name="windLineDeficiencyMidTermBwrNotified" data-field="deficiency_mid_term_bwr_notified" data-testid="wind-line-deficiency-mid-term-bwr-notified" data-field-type="checkbox" aria-label="Deficient: Mid-Term Bwr Notified to Return Refund"></td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-insurance-carrier-rating">
+                  <td class="title"><label for="wind-line-deficiency-insurance-carrier-rating">Insurance Carrier Rating</label></td>
+                  <td><input type="checkbox" id="wind-line-deficiency-insurance-carrier-rating" name="windLineDeficiencyInsuranceCarrierRating" data-field="deficiency_insurance_carrier_rating" data-testid="wind-line-deficiency-insurance-carrier-rating" data-field-type="checkbox" aria-label="Deficient: Insurance Carrier Rating"></td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-deductible">
+                  <td class="title"><label for="wind-line-deficiency-deductible">Deductible</label></td>
+                  <td><input type="checkbox" id="wind-line-deficiency-deductible" name="windLineDeficiencyDeductible" data-field="deficiency_deductible" data-testid="wind-line-deficiency-deductible" data-field-type="checkbox" aria-label="Deficient: Deductible" checked></td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-acord-form-unacceptable">
+                  <td class="title"><label for="wind-line-deficiency-acord-form-unacceptable">ACORD Form Unacceptable</label></td>
+                  <td><input type="checkbox" id="wind-line-deficiency-acord-form-unacceptable" name="windLineDeficiencyAcordFormUnacceptable" data-field="deficiency_acord_form_unacceptable" data-testid="wind-line-deficiency-acord-form-unacceptable" data-field-type="checkbox" aria-label="Deficient: ACORD Form Unacceptable"></td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-declaration-required">
+                  <td class="title"><label for="wind-line-deficiency-declaration-required">Declaration Required</label></td>
+                  <td>
+                    <input type="checkbox" id="wind-line-deficiency-declaration-required" name="windLineDeficiencyDeclarationRequired" data-field="deficiency_declaration_required" data-testid="wind-line-deficiency-declaration-required" data-field-type="checkbox" aria-label="Deficient: Declaration Required">
+                    <label class="radioline"><input type="radio" id="wind-line-declaration-required-corrected" name="windLineDeclarationRequiredStatus" data-field="declaration_required_status" value="Corrected" data-testid="wind-line-declaration-required-corrected" data-field-type="radio" checked> Corrected</label>
+                    <label class="radioline"><input type="radio" id="wind-line-declaration-required-waived" name="windLineDeclarationRequiredStatus" data-field="declaration_required_status" value="Waived" data-testid="wind-line-declaration-required-waived" data-field-type="radio"> Waived</label>
+                    <div data-testid="wind-line-declaration-required-letter" data-field="declaration_required_letter">DecReqd.1 letter 8/22/2025</div>
+                    <div data-testid="wind-line-declaration-required-status-updated" data-field="declaration_required_status_updated">Status updated on 8/22/2025</div>
+                  </td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-mortgagee-clause">
+                  <td class="title"><label for="wind-line-deficiency-mortgagee-clause">Mortgagee Clause</label></td>
+                  <td>
+                    <input type="checkbox" id="wind-line-deficiency-mortgagee-clause" name="windLineDeficiencyMortgageeClause" data-field="deficiency_mortgagee_clause" data-testid="wind-line-deficiency-mortgagee-clause" data-field-type="checkbox" aria-label="Deficient: Mortgagee Clause">
+                    <label class="radioline"><input type="radio" id="wind-line-mortgagee-clause-corrected" name="windLineMortgageeClauseStatus" data-field="mortgagee_clause_status" value="Corrected" data-testid="wind-line-mortgagee-clause-corrected" data-field-type="radio" checked> Corrected</label>
+                    <label class="radioline"><input type="radio" id="wind-line-mortgagee-clause-waived" name="windLineMortgageeClauseStatus" data-field="mortgagee_clause_status" value="Waived" data-testid="wind-line-mortgagee-clause-waived" data-field-type="radio"> Waived</label>
+                    <div data-testid="wind-line-mortgagee-clause-letter" data-field="mortgagee_clause_letter">MtgClausP.7 letter 8/14/2024</div>
+                    <div data-testid="wind-line-mortgagee-clause-status-updated" data-field="mortgagee_clause_status_updated">Status updated on 8/14/2024</div>
+                  </td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-property-address-on-policy">
+                  <td class="title"><label for="wind-line-deficiency-property-address-on-policy">Property Address on Policy</label></td>
+                  <td><input type="checkbox" id="wind-line-deficiency-property-address-on-policy" name="windLineDeficiencyPropertyAddressOnPolicy" data-field="deficiency_property_address_on_policy" data-testid="wind-line-deficiency-property-address-on-policy" data-field-type="checkbox" aria-label="Deficient: Property Address on Policy"></td>
+                </tr>
+                <tr data-testid="wind-line-deficiency-row-name-insured">
+                  <td class="title"><label for="wind-line-deficiency-name-insured">Name Insured</label></td>
+                  <td><input type="checkbox" id="wind-line-deficiency-name-insured" name="windLineDeficiencyNameInsured" data-field="deficiency_name_insured" data-testid="wind-line-deficiency-name-insured" data-field-type="checkbox" aria-label="Deficient: Name Insured"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= SCRAPE SNAPSHOT =================
+       {"page": "loan-detail", "sections": {"<data-section>": {"<data-field>": value}}, "fields": {...flat...},
+        "insurance_lines": [{"line_type", "line_id", "policy_number", "active", "sections": {...}, "fields": {...}}],
+        "comments": [...]}
+       Fields inside an insurance line appear only under that line. Checkbox -> true/false, radio group -> checked value, select -> selected text,
+       chip -> its suggested value, display element -> trimmed text. Refreshed on every input/change/click. -->
+  <script type="application/json" id="loan-detail-json" data-testid="loan-detail-json">{}</script>
+
+  <!-- ================= FOOTER ================= -->
+  <footer data-testid="footer" data-section="footer">
+    <div data-testid="footer-copyright" data-field="footer_copyright">© 2003-2026 Example Financial, Inc. All Rights Reserved. |
+      <button type="button" class="linkbtn" id="btn-privacy-statement" data-testid="btn-privacy-statement" data-field-type="button">Privacy Statement</button>
+    </div>
+    <div data-testid="footer-version" data-field="footer_version">Version: 11.8.2.0 | 02</div>
+  </footer>
+</main>
+
+<!-- ================= LOAN COMMENTS =================
+     Comment history for this loan, newest first. Kept here as JSON so it can be scraped without opening
+     the popup: comment_id, comment, csr, date (ISO local time), comment_type, source ("" when blank). -->
+<script type="application/json" id="loan-comments-json" data-testid="loan-comments-json" data-section="comments-data">
+[
+  {"comment_id": "c9", "comment": "Insurance payment for line id 40524685 mailed to confirmed carrier remit to address: PO Box 55001 Dallas TX 75266", "csr": "DISB_PostInsuranceLine", "date": "2024-06-28T14:47", "comment_type": "", "source": ""},
+  {"comment_id": "c8", "comment": "Homeowner: MARA ELLISON callback #: 1207521103 calling in to verify we have current insurance info to get escrow analysis done. advised we do have the new insurance for 2024-2025 with sample carrier 30. payment has been prepped. verified if CS will be able to see it yet or it still needs to be processed. called CS and they said theyll be able to do an EA. transferred over to CS", "csr": "user001", "date": "2024-06-28T13:30", "comment_type": "", "source": ""},
+  {"comment_id": "c7", "comment": "Transfer to Client CS", "csr": "user001", "date": "2024-06-28T13:13", "comment_type": "Call", "source": ""},
+  {"comment_id": "c6", "comment": "Received new business policy from Sample Carrier 30 ACH EDI Policy Effective 6/30/2024 to 6/30/2025 Policy # 820797903. This policy has taken the place Cancelled of SAMPLE NATIONAL PROPERTY CASUALTY policy 28J9412S71", "csr": "user002", "date": "2024-06-27T14:01", "comment_type": "", "source": ""},
+  {"comment_id": "c5", "comment": "Per DOT ELLISON, RYLAN is Acceptable", "csr": "user002", "date": "2024-06-27T13:57", "comment_type": "", "source": ""},
+  {"comment_id": "c4", "comment": "Received cancellation printed 4/2/2024 for SAMPLE NATIONAL PROPERTY CASUALTY Policy 28J9412S71 effective 6/30/2024 due to Cancel - NonRenewal.", "csr": "user003", "date": "2024-04-13T09:47", "comment_type": "", "source": ""},
+  {"comment_id": "c3", "comment": "Case Status set CLOSED by CRM Case Transaction Load process", "csr": "EXAMPLE\\svc_sql02", "date": "2023-06-05T21:04", "comment_type": "OPI", "source": "CRM"},
+  {"comment_id": "c2", "comment": "Insurance payment for line id 40524685 mailed to confirmed carrier remit to address: PO Box 55002 Dallas TX 75201-5002", "csr": "DISB_PostInsuranceLine", "date": "2023-06-05T14:35", "comment_type": "", "source": ""},
+  {"comment_id": "c1", "comment": "Case Status set SUSPEND by CRM Case Transaction Load process", "csr": "EXAMPLE\\svc_sql02", "date": "2023-06-01T21:04", "comment_type": "OPI", "source": "CRM"}
+]
+</script>
+
+<!-- COMMENTS POPUP: opened by the Comments tab. The list is rendered in an iframe; OK / Cancel close it
+     and the previously active tab is reselected. data-state on the dialog is "open" or "closed". -->
+<dialog class="modal" id="comments-dialog" aria-label="Loan Comments" data-testid="comments-dialog" data-section="comments-dialog" data-state="closed">
+  <form method="dialog">
+    <iframe id="comments-frame" title="Loan Comments" data-testid="comments-frame" data-section="comments"></iframe>
+    <div class="btn-row modal-actions">
+      <button value="ok" class="btn" id="btn-comments-ok" data-testid="btn-comments-ok" data-field-type="button">OK</button>
+      <button value="cancel" class="btn quiet" id="btn-comments-cancel" data-testid="btn-comments-cancel" data-field-type="button">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="text/html" id="comments-template">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg: #fff; --text: #1a1a1a; --muted: #4a4a4a; --rule: #d6d6d6; --band: #e8f0f8; --band-text: #1f4e79; --row-hover: #f7fbff; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg: #17191c; --text: #e8e8e8; --muted: #b4b4b4; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --row-hover: #232b35; } }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #17191c; --text: #e8e8e8; --muted: #b4b4b4; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --row-hover: #232b35; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.35 Verdana, Geneva, "DejaVu Sans", Arial, sans-serif; }
+  main { padding: 8px 12px 12px; }
+  h1 { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--band-text); }
+  h1 .count { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 12px; }
+  th { background: var(--band); color: var(--band-text); font-weight: 400; text-align: left; padding: 6px 8px; border: 1px solid var(--rule); position: sticky; top: 0; }
+  td { padding: 8px; border: 1px solid var(--rule); vertical-align: top; }
+  tbody tr:hover { background: var(--row-hover); }
+  td[data-col="comment"] { width: 55%; overflow-wrap: anywhere; }
+  td[data-col="csr"] { overflow-wrap: anywhere; }
+  td[data-col="date"] { white-space: nowrap; }
+  .empty { color: var(--muted); padding: 10px 0; }
+</style>
+</head>
+<body>
+<main id="comments-screen" data-section="comments">
+  <h1>Comments <span class="count" id="comments-count" data-field="comments_count"></span></h1>
+  <div class="table-wrap">
+    <table id="comments-table" data-testid="comments-table">
+      <thead>
+        <tr><th scope="col" data-col="comment">Comment</th><th scope="col" data-col="csr">CSR</th><th scope="col" data-col="date">Date</th><th scope="col" data-col="comment_type">Comment Type</th><th scope="col" data-col="source">Source</th></tr>
+      </thead>
+      <tbody id="comments-body"></tbody>
+    </table>
+  </div>
+  <p class="empty" id="comments-empty" hidden>No comments on this loan.</p>
+</main>
+</body>
+</html>
+</script>
+
+<!-- CARRIER SEARCH POPUP: opened by Enter in an insurance line's Carrier box. The search screen is rendered in an
+     iframe and carries its own Search / Reset / Close / Select 1st buttons; clicking any cell of a result row
+     returns that carrier to the line. data-state on the dialog is "open" or "closed". -->
+<dialog class="modal" id="carrier-search-dialog" aria-label="Search for Carrier" data-testid="carrier-search-dialog" data-section="carrier-search-dialog" data-state="closed">
+  <iframe id="carrier-search-frame" title="Search for Carrier" data-testid="carrier-search-frame" data-section="carrier-search"></iframe>
+</dialog>
+
+<script type="text/html" id="carrier-search-template">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg: #fff; --panel: #f2f2f2; --text: #1a1a1a; --muted: #4a4a4a; --rule: #d6d6d6; --band: #e8f0f8; --band-text: #1f4e79;
+          --row-hover: #f7fbff; --row-selected: #e1eefb; --input-bg: #fff; --input-border: #9a9a9a; --hint: #7a2d8c; --alert: #d40000; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg: #17191c; --panel: #21252a; --text: #e8e8e8; --muted: #b4b4b4; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --row-hover: #232b35; --row-selected: #2a3b52; --input-bg: #14171a; --input-border: #555c66; --hint: #d3a6e3; --alert: #ff6b6b; } }
+  :root[data-theme="dark"] { color-scheme: dark; --bg: #17191c; --panel: #21252a; --text: #e8e8e8; --muted: #b4b4b4; --rule: #3a3f46; --band: #1f2b3a; --band-text: #9cc2ee; --row-hover: #232b35; --row-selected: #2a3b52; --input-bg: #14171a; --input-border: #555c66; --hint: #d3a6e3; --alert: #ff6b6b; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.35 Verdana, Geneva, "DejaVu Sans", Arial, sans-serif; }
+  main { padding: 8px 12px 12px; }
+  h1 { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--band-text); }
+  input[type=text] { box-sizing: border-box; width: 100%; min-width: 0; font: inherit; color: var(--text); background: var(--input-bg); border: 1px solid var(--input-border); padding: 2px 4px; }
+  input::placeholder { color: var(--hint); opacity: 1; }
+  /* Criteria row: address box | Use Payee | payee-name box | buttons, stacking when narrow */
+  .criteria { display: grid; grid-template-columns: minmax(0, 1.5fr) auto minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 6px; background: var(--panel); border: 1px solid var(--rule); }
+  fieldset { margin: 0; padding: 0 0 4px; border: 1px solid var(--rule); background: var(--bg); min-width: 0; }
+  legend { float: left; width: 100%; box-sizing: border-box; padding: 3px 6px; margin-bottom: 4px; background: var(--band); color: var(--band-text); font-size: 12px; }
+  fieldset input[type=text] { display: block; width: calc(100% - 12px); margin: 0 6px 3px; }
+  .csz { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 6px; margin: 0 6px; }
+  .csz input[type=text] { width: 100%; margin: 0; }
+  .usepayee { display: flex; align-items: center; gap: 4px; padding-top: 30px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .buttons { display: flex; flex-direction: column; gap: 4px; }
+  .buttons button { font: inherit; font-size: 12px; min-width: 76px; padding: 3px 10px; border-radius: 10px; color: var(--text); background: var(--bg); border: 1px solid var(--input-border); cursor: pointer; }
+  .buttons button:hover { background: var(--row-selected); }
+  @media (max-width: 640px) {
+    .criteria { grid-template-columns: 1fr; }
+    .usepayee { padding-top: 0; }
+    .buttons { flex-direction: row; flex-wrap: wrap; }
+  }
+  .status { margin: 8px 0 4px; font-size: 12px; color: var(--muted); min-height: 1.35em; }
+  .status[data-state="error"] { color: var(--alert); }
+  /* Results */
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 12px; }
+  th { background: var(--band); color: var(--band-text); font-weight: 400; text-align: left; padding: 5px 8px; border: 1px solid var(--rule); position: sticky; top: 0; }
+  td { padding: 5px 8px; border: 1px solid var(--rule); vertical-align: top; cursor: pointer; }
+  tbody tr:hover { background: var(--row-hover); }
+  tbody tr:focus { outline: 2px solid var(--band-text); outline-offset: -2px; }
+  tbody tr[aria-selected="true"] { background: var(--row-selected); }
+  td[data-col="zip"], td[data-col="phone"] { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main id="carrier-search-screen" data-section="carrier-search">
+  <h1>Search for Carrier</h1>
+  <form id="carrier-search-form" class="criteria" data-testid="carrier-search-form" data-section="carrier-search-criteria" autocomplete="off">
+    <fieldset data-section="carrier-search-address">
+      <legend>Property Address</legend>
+      <input type="text" id="cs-address1" data-field="address1" data-testid="carrier-search-address1" placeholder="Address 1" aria-label="Address 1">
+      <input type="text" id="cs-address2" data-field="address2" data-testid="carrier-search-address2" placeholder="Address 2" aria-label="Address 2">
+      <div class="csz">
+        <input type="text" id="cs-city" data-field="city" data-testid="carrier-search-city" placeholder="City" aria-label="City">
+        <input type="text" id="cs-state" data-field="state" data-testid="carrier-search-state" placeholder="State" aria-label="State" maxlength="2">
+        <input type="text" id="cs-zip" data-field="zip" data-testid="carrier-search-zip" placeholder="Zip" aria-label="Zip" maxlength="10">
+      </div>
+    </fieldset>
+    <label class="usepayee" for="cs-use-payee">Use Payee <input type="checkbox" id="cs-use-payee" data-field="use_payee" data-testid="carrier-search-use-payee" aria-label="Use Payee: match names against the carrier's payee name"></label>
+    <fieldset data-section="carrier-search-names">
+      <legend>Payee Name</legend>
+      <input type="text" id="cs-name1" data-field="name1" data-testid="carrier-search-name1" placeholder="Name 1" aria-label="Name 1">
+      <input type="text" id="cs-name2" data-field="name2" data-testid="carrier-search-name2" placeholder="Name 2" aria-label="Name 2">
+      <input type="text" id="cs-name3" data-field="name3" data-testid="carrier-search-name3" placeholder="Name 3" aria-label="Name 3">
+    </fieldset>
+    <div class="buttons">
+      <button type="submit" id="cs-search" data-testid="btn-carrier-search" data-field-type="button">Search</button>
+      <button type="button" id="cs-reset" data-testid="btn-carrier-reset" data-field-type="button">Reset</button>
+      <button type="button" id="cs-close" data-testid="btn-carrier-close" data-field-type="button">Close</button>
+      <button type="button" id="cs-select-first" data-testid="btn-carrier-select-first" data-field-type="button">Select 1st</button>
+    </div>
+  </form>
+  <p class="status" id="cs-status" data-testid="carrier-search-status" data-field="carrier_search_status" role="status"></p>
+  <div class="table-wrap" id="cs-results-wrap" hidden>
+    <table id="carrier-results" data-testid="carrier-results-table" aria-label="Carrier search results">
+      <thead><tr id="carrier-results-head"></tr></thead>
+      <tbody id="carrier-results-body"></tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>
+</script>
+
+<script>
+(function () {
+  // --- Tabs: keep aria-selected in sync so tests can assert active tab ---
+  function selectTab(tab) {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+  }
+  var lastTab = document.querySelector('.tab.active');
+  document.querySelectorAll('.tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      if (tab.id === 'tab-comments') {
+        selectTab(tab);
+        openComments();
+        return;
+      }
+      selectTab(tab);
+      lastTab = tab;
+    });
+  });
+
+  // --- Comments popup: Comments tab -> dialog with the comment list in an iframe ---
+  function loanComments() {
+    return JSON.parse(document.getElementById('loan-comments-json').textContent);
+  }
+
+  // "2024-06-28T14:47" -> ["6/28/2024", "2:47 PM"], as on the original screen
+  function formatDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso);
+    if (!m) return [iso, ''];
+    var h = +m[4], ampm = h < 12 ? 'AM' : 'PM';
+    return [+m[2] + '/' + +m[3] + '/' + m[1], ((h % 12) || 12) + ':' + m[5] + ' ' + ampm];
+  }
+
+  function openComments() {
+    var dlg = document.getElementById('comments-dialog'), frame = document.getElementById('comments-frame');
+    frame.onload = function () {
+      var d = frame.contentDocument, body = d.getElementById('comments-body'), rows = loanComments();
+      rows.forEach(function (c, i) {
+        var tr = d.createElement('tr');
+        tr.dataset.commentId = c.comment_id;
+        tr.dataset.testid = 'comment-row-' + (i + 1);
+        ['comment', 'csr', 'date', 'comment_type', 'source'].forEach(function (col) {
+          var td = d.createElement('td');
+          td.dataset.col = col;
+          if (col === 'date') {
+            var parts = formatDate(c.date), t = d.createElement('time');
+            t.dateTime = c.date;
+            t.append(parts[0], d.createElement('br'), parts[1]);
+            td.appendChild(t);
+          } else {
+            td.textContent = c[col];
+          }
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+      d.getElementById('comments-count').textContent = '(' + rows.length + ')';
+      d.getElementById('comments-empty').hidden = rows.length > 0;
+      var theme = document.documentElement.dataset.theme;
+      if (theme) d.documentElement.dataset.theme = theme;
+      // Escape inside the iframe never reaches the dialog, so handle it here.
+      d.addEventListener('keydown', function (e) { if (e.key === 'Escape') dlg.close('cancel'); });
+    };
+    frame.srcdoc = document.getElementById('comments-template').textContent.trim();
+    dlg.returnValue = '';
+    dlg.dataset.state = 'open';
+    dlg.showModal();
+    document.getElementById('btn-comments-ok').focus();
+  }
+
+  document.getElementById('comments-dialog').addEventListener('close', function () {
+    var dlg = this, tab = lastTab || document.getElementById('tab-loan-details');
+    dlg.dataset.state = 'closed';
+    selectTab(tab);
+    tab.focus();
+    document.dispatchEvent(new CustomEvent('comments:closed', { detail: { result: dlg.returnValue || 'cancel' } }));
+  });
+
+  /* --- Carrier search popup: Enter in a line's Carrier box -> Search for Carrier screen in an iframe ---
+     Search fetches GET {baseUrl}/carriers (State is passed as the API's exact-match filter) and narrows the rows
+     here by case-insensitive "contains" on each filled box (Zip: starts with). Name 1-3 match any of the carrier's
+     names, or its payee_name when Use Payee is ticked. Clicking a cell (or Enter on a row) writes that carrier's
+     name and address to the line's Carrier fields and closes the popup; the page then fires 'carrier:selected'. */
+  var CARRIER_COLS = [['name1', 'Name 1'], ['name2', 'Name 2'], ['name3', 'Name 3'], ['address1', 'Address 1'], ['address2', 'Address 2'],
+                      ['city', 'City'], ['state', 'State'], ['zip', 'Zip'], ['phone', 'Phone'], ['payee_name', 'Payee Name']];
+  var CarrierSearchAPI = {
+    list: function (params) {
+      var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, LoanDetailAPI.timeoutMs);
+      var qs = new URLSearchParams(params || {}).toString();
+      return fetch(LoanDetailAPI.baseUrl + '/carriers' + (qs ? '?' + qs : ''), { signal: ctl.signal })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Carrier API returned ' + res.status);
+          return res.json();
+        })
+        .finally(function () { clearTimeout(t); });
+    }
+  };
+  window.CarrierSearchAPI = CarrierSearchAPI;
+
+  var carrierTarget = null;   // the Carrier box whose Enter opened the popup
+  var carrierSearchSeq = 0;   // ignores responses from superseded searches
+
+  function contains(hay, needle) { return String(hay || '').toLowerCase().indexOf(needle.toLowerCase()) >= 0; }
+
+  function matchesCarrier(c, q) {
+    var names = q.use_payee ? [c.payee_name] : [c.name1, c.name2, c.name3];
+    return ['address1', 'address2', 'city'].every(function (k) { return !q[k] || contains(c[k], q[k]); }) &&
+      (!q.state || String(c.state || '').toLowerCase() === q.state.toLowerCase()) &&
+      (!q.zip || String(c.zip || '').toLowerCase().indexOf(q.zip.toLowerCase()) === 0) &&
+      ['name1', 'name2', 'name3'].every(function (k) {
+        return !q[k] || names.some(function (n) { return contains(n, q[k]); });
+      });
+  }
+
+  function carrierAddress(c) {
+    var cityLine = [c.city, [c.state, c.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return [c.name2, c.name3, c.address1, c.address2, cityLine, c.phone ? 'Phone: ' + c.phone : '']
+      .filter(Boolean).join('\n');
+  }
+
+  function returnCarrier(c) {
+    var panel = carrierTarget && carrierTarget.closest('.linepanel');
+    if (!panel) return;
+    var address = panel.querySelector('[data-field="carrier_address"]');
+    carrierTarget.value = c.name1 || '';
+    if (address) address.value = carrierAddress(c);
+    [carrierTarget, address].forEach(function (el) {
+      if (!el) return;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    document.dispatchEvent(new CustomEvent('carrier:selected', { detail: { carrier: c, lineType: panel.dataset.lineType, lineId: panel.dataset.lineId } }));
+    document.getElementById('carrier-search-dialog').close('selected');
+  }
+
+  function renderCarrierResults(d, rows) {
+    var body = d.getElementById('carrier-results-body');
+    body.textContent = '';
+    rows.forEach(function (c, i) {
+      var tr = d.createElement('tr');
+      tr.tabIndex = 0;
+      tr.dataset.carrierId = c.carrier_id || '';
+      tr.dataset.testid = 'carrier-result-row-' + (i + 1);
+      tr.setAttribute('aria-selected', 'false');
+      CARRIER_COLS.forEach(function (col) {
+        var td = d.createElement('td');
+        td.dataset.col = col[0];
+        td.textContent = c[col[0]] || '';
+        tr.appendChild(td);
+      });
+      tr.addEventListener('click', function () { tr.setAttribute('aria-selected', 'true'); returnCarrier(c); });
+      tr.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); tr.click(); } });
+      body.appendChild(tr);
+    });
+    d.getElementById('cs-results-wrap').hidden = !rows.length;
+  }
+
+  function setCarrierStatus(d, msg, state) {
+    var el = d.getElementById('cs-status');
+    el.textContent = msg;
+    el.dataset.state = state;
+  }
+
+  function searchCarriers(d) {
+    var q = {};
+    d.querySelectorAll('#carrier-search-form input[type=text]').forEach(function (el) { q[el.dataset.field] = el.value.trim(); });
+    q.use_payee = d.getElementById('cs-use-payee').checked;
+    var seq = ++carrierSearchSeq;
+    setCarrierStatus(d, 'Searching…', 'loading');
+    return CarrierSearchAPI.list(q.state ? { state: q.state } : {}).then(function (rows) {
+      if (seq !== carrierSearchSeq) return [];
+      var hits = rows.filter(function (c) { return matchesCarrier(c, q); });
+      renderCarrierResults(d, hits);
+      setCarrierStatus(d, hits.length ? hits.length + ' carrier' + (hits.length === 1 ? '' : 's') + ' found. Click a row to select it.'
+                                      : 'No carriers match the search.', hits.length ? 'ok' : 'empty');
+      return hits;
+    }, function (err) {
+      if (seq !== carrierSearchSeq) return [];
+      renderCarrierResults(d, []);
+      setCarrierStatus(d, 'Could not search carriers: ' + err.message, 'error');
+      return [];
+    });
+  }
+
+  function openCarrierSearch(input) {
+    var dlg = document.getElementById('carrier-search-dialog'), frame = document.getElementById('carrier-search-frame');
+    carrierTarget = input;
+    frame.onload = function () {
+      var d = frame.contentDocument, form = d.getElementById('carrier-search-form'), head = d.getElementById('carrier-results-head');
+      CARRIER_COLS.forEach(function (col) {
+        var th = d.createElement('th');
+        th.scope = 'col';
+        th.dataset.col = col[0];
+        th.textContent = col[1];
+        head.appendChild(th);
+      });
+      form.addEventListener('submit', function (e) { e.preventDefault(); searchCarriers(d); });
+      d.getElementById('cs-reset').addEventListener('click', function () {
+        form.reset();
+        carrierSearchSeq++;
+        renderCarrierResults(d, []);
+        setCarrierStatus(d, '', '');
+        d.getElementById('cs-address1').focus();
+      });
+      d.getElementById('cs-close').addEventListener('click', function () { dlg.close('cancel'); });
+      d.getElementById('cs-select-first').addEventListener('click', function () {
+        var first = d.querySelector('#carrier-results-body tr');
+        if (first) { first.click(); return; }
+        searchCarriers(d).then(function (hits) { if (hits.length) returnCarrier(hits[0]); });
+      });
+      var theme = document.documentElement.dataset.theme;
+      if (theme) d.documentElement.dataset.theme = theme;
+      // Escape inside the iframe never reaches the dialog, so handle it here.
+      d.addEventListener('keydown', function (e) { if (e.key === 'Escape') dlg.close('cancel'); });
+      // Start from what was typed in the Carrier box.
+      var name1 = d.getElementById('cs-name1');
+      name1.value = input.value.trim();
+      name1.focus();
+      if (name1.value) searchCarriers(d);
+    };
+    frame.srcdoc = document.getElementById('carrier-search-template').textContent.trim();
+    dlg.returnValue = '';
+    dlg.dataset.state = 'open';
+    dlg.showModal();
+  }
+
+  // Delegated, since line panels are rebuilt when a loan is loaded from the API.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.target.matches('.linepanel input[data-field="carrier_name"]')) return;
+    e.preventDefault();
+    openCarrierSearch(e.target);
+  });
+
+  document.getElementById('carrier-search-dialog').addEventListener('close', function () {
+    var dlg = this;
+    dlg.dataset.state = 'closed';
+    carrierSearchSeq++;
+    if (carrierTarget) carrierTarget.focus();
+    document.dispatchEvent(new CustomEvent('carrier-search:closed', { detail: { result: dlg.returnValue || 'cancel' } }));
+  });
+
+  // --- Insurance line tabs (one per line): show the chosen line's panel ---
+  // Delegated, since the tabs are rebuilt when a loan is loaded from the API.
+  document.querySelector('.linetabs').addEventListener('click', function (e) {
+    var tab = e.target.closest('.linetab');
+    if (!tab) return;
+    document.querySelectorAll('.linetab').forEach(function (t) {
+      var on = t === tab;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  });
+
+  // --- Section headers collapse/expand ---
+  document.querySelectorAll('.section > .shead').forEach(function (head) {
+    head.addEventListener('click', function () {
+      var body = head.nextElementSibling;
+      var open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : '';
+      head.setAttribute('aria-expanded', String(!open));
+      head.parentElement.setAttribute('data-state', open ? 'collapsed' : 'expanded');
+    });
+  });
+
+  // --- Suggested-value chips: click applies the document value to its field ---
+  // Delegated, so chips in line panels built from the API work too.
+  document.addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-target][data-value]');
+    if (!chip) return;
+    var el = document.getElementById(chip.dataset.target);
+    if (!el) return;
+    if (el.type === 'checkbox') {
+      el.checked = chip.dataset.value === 'true';
+    } else {
+      el.value = chip.dataset.value;
+    }
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    el.focus();
+  });
+
+  // --- Buttons echo their action so automation has something to assert on ---
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-field-type="button"]');
+    if (btn) document.body.setAttribute('data-last-action', btn.dataset.testid || btn.id || '');
+  });
+
+  // --- Scrape snapshot: every [data-field] value, grouped by its nearest [data-section] ---
+  function readField(el) {
+    if (el.matches('[data-target][data-value]')) return el.dataset.value;
+    if (el.type === 'checkbox') return el.checked;
+    if (el.type === 'radio') {
+      var picked = document.querySelector('input[type=radio][name="' + el.name + '"]:checked');
+      return picked ? picked.value : null;
+    }
+    if (el.tagName === 'SELECT') return el.selectedIndex < 0 ? '' : el.options[el.selectedIndex].text.trim();
+    if ('value' in el && el.tagName !== 'BUTTON' && el.tagName !== 'LI') return el.value;
+    return el.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  function getLoanDetail() {
+    var out = { page: 'loan-detail', sections: {}, fields: {}, insurance_lines: [], comments: loanComments() };
+    // Each insurance line gets its own sections/fields, since the same data-field names repeat per line.
+    var lines = new Map();
+    document.querySelectorAll('.linepanel').forEach(function (p) {
+      var line = { line_type: p.dataset.lineType, line_id: p.dataset.lineId, policy_number: p.dataset.policyNumber,
+                   active: !p.hidden, sections: {}, fields: {} };
+      lines.set(p, line);
+      out.insurance_lines.push(line);
+    });
+    document.querySelectorAll('[data-field]').forEach(function (el) {
+      var panel = el.closest('.linepanel');
+      var target = panel ? lines.get(panel) : out;
+      var host = el.parentElement && el.parentElement.closest('[data-section]');
+      var section = host && host !== panel ? host.dataset.section : (panel ? 'line' : 'page');
+      var value = readField(el);
+      (target.sections[section] = target.sections[section] || {})[el.dataset.field] = value;
+      target.fields[el.dataset.field] = value;
+    });
+    return out;
+  }
+
+  var snapshot = document.getElementById('loan-detail-json');
+  function refreshSnapshot() { snapshot.textContent = JSON.stringify(getLoanDetail(), null, 2); }
+  window.getLoanDetail = getLoanDetail;
+  ['input', 'change', 'click'].forEach(function (evt) {
+    document.addEventListener(evt, refreshSnapshot);
+  });
+
+  /* =========================================================================
+     LOAN DETAIL API
+     window.LoanDetailAPI.get(loanNumber)             -> Promise<Loan>   GET {baseUrl}/loan/<loan-number> (mocks/api/server.py)
+     window.LoanDetailAPI.load(loanNumber)            -> fetches the loan and shows it on the page
+     Loan JSON: loan fields at the top level, comments[], deficiencies[], and collateral[]; each collateral
+     object has its property fields plus insurance_lines[]. Values go to the [data-field] of the same name in
+     the matching section; the *_ALIASES maps cover JSON names that differ from the page's data-field names.
+     The loan is loaded from ?loan-number=... or the Loan # box's Go button / Enter key. Without a loan number
+     (or if the API fails) the page keeps its built-in sample loan.
+     ========================================================================= */
+  var LoanDetailAPI = {
+    baseUrl: 'http://localhost:9191',
+    timeoutMs: 8000,
+    get: function (loanNumber) {
+      var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, this.timeoutMs);
+      return fetch(this.baseUrl + '/loan/' + encodeURIComponent(loanNumber), { signal: ctl.signal })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Loan API returned ' + res.status + ' for loan ' + loanNumber);
+          return res.json();
+        })
+        .finally(function () { clearTimeout(t); });
+    },
+    load: loadLoan
+  };
+  window.LoanDetailAPI = LoanDetailAPI;
+
+  var LOAN_ALIASES = { committment_amount: 'commitment_amount', branch: 'branch_number' };
+  var COLLATERAL_ALIASES = { property_address_1: 'property_address1', city: 'property_city', chk_track_only: 'track_only' };
+  var LINE_ALIASES = {
+    chk_pay_agent: 'pay_agent', chk_mail_payment_to_agent: 'mail_payment_to_agent',
+    agent_address_1: 'agent_address1', agent_address_2: 'agent_address2',
+    earliest_cancellation_or_reinstatement_reason: 'earliest_cancellation_reinstate_reason',
+    cancel_or_reinstate_date: 'cancel_reinstate_date', cancel_or_reinstate_reason: 'cancel_reinstate_reason',
+    last_premium_amount: 'last_payment_amount', last_payee: 'last_payment_payee', last_cheque_info: 'last_payment_check_number',
+    total_premium_amount: 'premium_amount', additional_amount_due: 'additional_amt_due',
+    chk_make_payment: 'premium_amount_make_payment', chk_expedite_payment: 'premium_amount_expedite',
+    chk_additional_amount_due: 'additional_amt_due_make_payment', chk_expedite_additional_amount_due: 'additional_amt_due_expedite',
+    chk_funding_only: 'premium_amount_funding_only', funding_only_comment: 'premium_amount_funding_only_comment'
+  };
+  var MONEY_FIELDS = { original_balance: 1, upb: 1, commitment_amount: 1, last_payment_amount: 1 };
+  // Fields a load leaves as they are: suggested-value chips (document suggestions, not loan data) and page controls.
+  var KEEP_FIELDS = '[data-target][data-value], [data-field="collateral_property"], [data-field="line_type"], [data-field="relate_line_to_document"]';
+
+  // Captured before any load, so every insurance line is built from the pristine Hazard panel.
+  var lineTemplate = document.getElementById('line-panel-hazard').cloneNode(true);
+
+  function pad(n) { return ('0' + n).slice(-2); }
+  // "09/13/2025" -> "2025-09-13" (ISO dates pass through)
+  function isoDate(v) {
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(v);
+    return m ? m[3] + '-' + pad(m[1]) + '-' + pad(m[2]) : v;
+  }
+  // "06/28/2024 2:47 PM" -> "2024-06-28T14:47", the format #loan-comments-json uses
+  function isoDateTime(v) {
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP]M)?/i.exec(v || '');
+    if (!m) return v || '';
+    var h = +m[4];
+    if (m[6]) h = h % 12 + (/p/i.test(m[6]) ? 12 : 0);
+    return m[3] + '-' + pad(m[1]) + '-' + pad(m[2]) + 'T' + pad(h) + ':' + m[5];
+  }
+  function formatNumber(v, field) {
+    return MONEY_FIELDS[field]
+      ? '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+  function truthy(v) { return v === true || /^(y|yes|true|1)$/i.test(String(v)); }
+  // Option/radio text vs a JSON value: case-insensitive, and Y/N or true/false also match Yes/No.
+  function sameValue(text, v) {
+    var a = String(text).trim().toLowerCase(), b = String(v).trim().toLowerCase();
+    return a === b || { y: 'yes', true: 'yes', n: 'no', false: 'no' }[b] === a;
+  }
+  function camel(s) { return s.replace(/-(\w)/g, function (_, c) { return c.toUpperCase(); }); }
+
+  // Pick the matching option; a value the list doesn't have is added so it still shows.
+  function setSelect(el, v) {
+    var match = Array.prototype.find.call(el.options, function (o) { return sameValue(o.text, v); });
+    if (!match && String(v).trim() !== '') { match = new Option(String(v)); el.add(match); }
+    if (match) match.selected = true; else el.selectedIndex = -1;
+  }
+
+  function setValue(el, v, field) {
+    if (v == null) v = '';
+    if (el.type === 'checkbox') el.checked = truthy(v);
+    else if (el.type === 'radio') el.checked = String(v) !== '' && sameValue(el.value, v);
+    else if (el.tagName === 'SELECT') setSelect(el, v);
+    else if (el.type === 'date') el.value = isoDate(String(v));
+    else if ('value' in el && el.tagName !== 'LI' && el.tagName !== 'BUTTON') el.value = typeof v === 'number' ? formatNumber(v, field) : v;
+    else el.textContent = typeof v === 'number' ? formatNumber(v, field) : v;
+  }
+
+  // Blank every field in scope, so none of the built-in sample loan survives a load.
+  function clearFields(scope) {
+    scope.querySelectorAll('[data-field]').forEach(function (el) {
+      if (!el.matches(KEEP_FIELDS)) setValue(el, '', el.dataset.field);
+    });
+  }
+
+  // Write each scalar JSON value to the [data-field] elements in scope named after its key (or the key's alias).
+  function fill(scope, data, aliases) {
+    Object.keys(data).forEach(function (key) {
+      var v = data[key];
+      if (v !== null && typeof v === 'object') return;   // nested collections are rendered separately
+      var field = aliases[key] || key;
+      scope.querySelectorAll('[data-field="' + field + '"]').forEach(function (el) {
+        if (!el.matches(KEEP_FIELDS)) setValue(el, v, field);
+      });
+    });
+  }
+
+  function setText(field, text) {
+    document.querySelectorAll('.loanbar [data-field="' + field + '"]').forEach(function (el) { el.textContent = text; });
+  }
+
+  // ---- Insurance lines: one tab + panel per line, cloned from the Hazard panel ----
+  // The first line keeps the template's ids; later lines get "<type>-line-" prefixed ids, test ids and
+  // radio/input names (the convention the Wind panel used), so every id stays unique.
+  function buildLinePanel(line, i, used) {
+    // The tab shows line_type exactly as the JSON has it; the slug (ids) is derived from it.
+    var type = String(line.line_type || line.line_type_desc || line.policy_type || 'Line');
+    var slug = type.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    var key = used[slug] ? slug + '-' + (i + 1) : slug;
+    used[slug] = true;
+    var prefix = i === 0 ? '' : key + '-line-', namePrefix = camel(prefix.slice(0, -1));
+    var panel = lineTemplate.cloneNode(true);
+    panel.id = 'line-panel-' + key;
+    panel.dataset.testid = 'line-panel-' + key;
+    panel.setAttribute('aria-labelledby', 'line-tab-' + key);
+    panel.dataset.lineType = type;
+    panel.dataset.lineId = line.line_id || '';
+    panel.dataset.policyNumber = line.policy_number || '';
+    panel.hidden = i !== 0;
+    if (prefix) panel.querySelectorAll('*').forEach(function (el) {
+      if (el.id) el.id = prefix + el.id;
+      if (el.htmlFor) el.htmlFor = prefix + el.htmlFor;
+      if (el.dataset.target) el.dataset.target = prefix + el.dataset.target;
+      if (el.dataset.testid) el.dataset.testid = prefix + el.dataset.testid;
+      if (el.name) el.name = namePrefix + el.name.charAt(0).toUpperCase() + el.name.slice(1);
+    });
+    return { panel: panel, key: key, prefix: prefix };
+  }
+
+  function buildLineTab(built, i) {
+    var p = built.panel, tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'linetab' + (i === 0 ? ' active' : '');
+    tab.id = 'line-tab-' + built.key;
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-selected', String(i === 0));
+    tab.setAttribute('aria-controls', p.id);
+    tab.dataset.testid = 'line-tab-' + built.key;
+    tab.dataset.fieldType = 'button';
+    tab.dataset.lineType = p.dataset.lineType;
+    [['insurance-line-type', p.dataset.lineType], ['insurance-line-policy-number', p.dataset.policyNumber], ['insurance-line-id', p.dataset.lineId]].forEach(function (s) {
+      var span = document.createElement('span');
+      span.dataset.testid = built.prefix + s[0];
+      span.textContent = s[1];
+      tab.appendChild(span);
+    });
+    return tab;
+  }
+
+  function renderWarnings(built, warnings) {
+    var box = built.panel.querySelector('[data-section="warnings-block"]'), ul = box.querySelector('ul');
+    ul.innerHTML = '';
+    (warnings || []).forEach(function (w, i) {
+      var li = document.createElement('li');
+      li.dataset.testid = built.prefix + 'warning-' + (i + 1);
+      li.dataset.field = 'warning_' + (i + 1);
+      li.textContent = w;
+      ul.appendChild(li);
+    });
+    box.hidden = !ul.children.length;
+  }
+
+  // The JSON's deficiencies are loan-level; each one is applied to the row with the same title in every line's table.
+  function applyDeficiencies(panel, deficiencies) {
+    var norm = function (s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); };
+    (deficiencies || []).forEach(function (d) {
+      if (!norm(d.title)) return;
+      panel.querySelectorAll('[data-section="deficiencies"] tbody tr').forEach(function (tr) {
+        if (norm(tr.querySelector('.title').textContent) !== norm(d.title)) return;
+        var box = tr.querySelector('input[type=checkbox]');
+        if (box) box.checked = truthy(d.flag);
+        tr.querySelectorAll('input[type=radio]').forEach(function (r) {
+          r.checked = (r.value === 'Corrected' && truthy(d.corrected)) || (r.value === 'Waived' && truthy(d.waived));
+        });
+      });
+    });
+  }
+
+  function lineValues(line) {
+    var v = Object.assign({}, line);
+    if (line.carrier_phone) v.carrier_address = [line.carrier_address, 'Phone: ' + line.carrier_phone].filter(Boolean).join('\n');
+    return v;
+  }
+
+  function renderLines(lines, loan) {
+    var tabs = document.querySelector('.linetabs'), bar = tabs.querySelector('.linebar'), host = tabs.parentElement, used = {};
+    tabs.querySelectorAll('.linetab').forEach(function (t) { t.remove(); });
+    host.querySelectorAll('.linepanel, [data-testid="no-insurance-lines"]').forEach(function (p) { p.remove(); });
+    (lines || []).forEach(function (line, i) {
+      var built = buildLinePanel(line, i, used), p = built.panel;
+      clearFields(p);
+      fill(p, lineValues(line), LINE_ALIASES);
+      renderWarnings(built, line.warnings);
+      applyDeficiencies(p, loan.deficiencies);
+      var relate = p.querySelector('[data-field="relate_line_to_document"]');
+      var relateText = 'Relate line to document';
+      relate.setAttribute('aria-label', relateText);
+      p.querySelector('label[for="' + relate.id + '"]').textContent = relateText + '?';
+      host.appendChild(p);
+      tabs.insertBefore(buildLineTab(built, i), bar);
+    });
+    if (!host.querySelector('.linepanel')) {
+      var none = document.createElement('p');
+      none.dataset.testid = 'no-insurance-lines';
+      none.textContent = 'No insurance lines on this property.';
+      host.appendChild(none);
+    }
+  }
+
+  // ---- Collateral: the property select lists every collateral object; choosing one shows it and its lines ----
+  function collateralValues(c) {
+    var v = Object.assign({}, c);
+    v.property_state = c.state || '';
+    v.property_zip = c.zip || '';
+    return v;
+  }
+
+  function renderCollateral(loan, i) {
+    var c = (loan.collateral || [])[i] || {};
+    var sec = document.getElementById('section-collateral-information');
+    clearFields(sec);
+    fill(sec, collateralValues(c), COLLATERAL_ALIASES);
+    setText('loan_property_header_line1', c.property_address_1 || c.property_info || '');
+    setText('loan_property_header_line2', [c.city, [c.state, c.zip].filter(Boolean).join(' ')].filter(Boolean).join(', '));
+    renderLines(c.insurance_lines, loan);
+  }
+
+  function renderLoan(loan, loanNumber) {
+    var info = document.getElementById('section-loan-information');
+    clearFields(info);
+    fill(info, loan, LOAN_ALIASES);
+
+    var num = String(loan.loan_number || '');
+    document.getElementById('loan-number-input').value = loanNumber || num;
+    setText('loan_number_display', num);
+    setText('loan_number_alt', num ? '(' + num + ')' : '');
+    var names = String(loan.primary_borrower || '').trim().split(/\s+/);
+    setText('loan_borrower_header_line2', names.length > 1 ? names.pop() : '');
+    setText('loan_borrower_header', names.join(' '));
+
+    if (Array.isArray(loan.comments)) {
+      document.getElementById('loan-comments-json').textContent = JSON.stringify(loan.comments.map(function (c, i, all) {
+        return { comment_id: 'c' + (all.length - i), comment: c.text || '', csr: c.csr || '', date: isoDateTime(c.datetime),
+                 comment_type: c.type || '', source: c.source || '' };
+      }), null, 2);
+    }
+
+    var sel = document.getElementById('collateral-property-select');
+    sel.innerHTML = '';
+    (loan.collateral || []).forEach(function (c, i) {
+      sel.add(new Option(c.property_info || c.property_address_1 || 'Property ' + (i + 1), String(i)));
+    });
+    sel.onchange = function () { renderCollateral(loan, +sel.value); refreshSnapshot(); };
+    renderCollateral(loan, 0);
+  }
+
+  function setLoadStatus(msg, state) {
+    var el = document.getElementById('loan-load-status');
+    el.textContent = msg;
+    el.dataset.state = state;
+    document.body.dataset.loanLoad = state;
+  }
+
+  function loadLoan(loanNumber) {
+    setLoadStatus('Loading loan ' + loanNumber + '…', 'loading');
+    return LoanDetailAPI.get(loanNumber).then(function (loan) {
+      renderLoan(loan, loanNumber);
+      setLoadStatus('Loaded loan ' + loanNumber, 'ok');
+      refreshSnapshot();
+      document.dispatchEvent(new CustomEvent('loan:loaded', { detail: { loanNumber: loanNumber, loan: loan } }));
+      return loan;
+    }, function (err) {
+      setLoadStatus('Could not load loan ' + loanNumber + ': ' + err.message + ' (showing sample data)', 'error');
+      throw err;
+    });
+  }
+
+  // --- URL parameters from loan-search.html's Load button: ?loan-number=... ---
+  var params = new URL(location.href).searchParams;
+  var urlLoan = (params.get('loan-number') || '').trim();
+  var loanInput = document.getElementById('loan-number-input');
+  if (urlLoan) {
+    loanInput.value = urlLoan;
+    loadLoan(urlLoan).catch(function (err) { console.warn(err); });
+  }
+
+  // --- Loan # box: Go (or Enter) loads the typed loan number ---
+  function loadTypedLoan() {
+    var n = loanInput.value.trim();
+    if (n) loadLoan(n).catch(function (err) { console.warn(err); });
+  }
+  document.getElementById('loan-number-go').addEventListener('click', loadTypedLoan);
+  loanInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') loadTypedLoan(); });
+
+  refreshSnapshot();
+})();
+</script>
+</body>
+</html>
